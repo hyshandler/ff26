@@ -19,9 +19,20 @@ def test_build_position_projections_for_rb_against_real_historical_seasons() -> 
 
     projections = result.projections
     assert len(projections) > 0
-    assert {"player_id", "player_name", "games", "position", "target_season"} <= set(
-        projections.columns
-    )
+    assert {
+        "player_id",
+        "player_name",
+        "games",
+        "position",
+        "target_season",
+        "games_played_estimate",
+        "fantasy_points_p10",
+        "fantasy_points_p50",
+        "fantasy_points_p90",
+    } <= set(projections.columns)
+    assert projections["games_played_estimate"].between(0, 17).all()
+    assert (projections["fantasy_points_p10"] <= projections["fantasy_points_p50"]).all()
+    assert (projections["fantasy_points_p50"] <= projections["fantasy_points_p90"]).all()
     for stat in POSITION_CONFIGS["RB"].raw_stat_columns:
         for quantile_column in (f"{stat}_p10", f"{stat}_p50", f"{stat}_p90"):
             assert quantile_column in projections.columns

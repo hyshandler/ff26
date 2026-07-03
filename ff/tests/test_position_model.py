@@ -10,6 +10,7 @@ from ff_model.position_model import (
 
 EMPTY_RED_ZONE = pd.DataFrame(columns=["season", "week", "player_id", "red_zone_carries"])
 EMPTY_SNAP_PCT = pd.DataFrame(columns=["season", "week", "player_id", "offense_pct"])
+EMPTY_DEPTH_CHART = pd.DataFrame(columns=["season", "player_id", "depth_chart_competition"])
 
 
 def _weekly(position: str, config: PositionConfig, rows: list[dict]) -> pd.DataFrame:
@@ -33,11 +34,29 @@ def test_add_position_features_only_returns_that_positions_rows(position: str) -
         ],
     )
 
-    result = add_position_features(config, weekly, EMPTY_RED_ZONE, EMPTY_SNAP_PCT)
+    result = add_position_features(config, weekly, EMPTY_RED_ZONE, EMPTY_SNAP_PCT, EMPTY_DEPTH_CHART)
 
     assert set(result["player_id"]) == {"p1"}
     assert set(feature_columns(config)) <= set(result.columns)
     assert set(config.raw_stat_columns) <= set(result.columns)
+
+
+@pytest.mark.parametrize("position", list(POSITION_CONFIGS))
+def test_add_position_features_merges_the_depth_chart_competition_flag(position: str) -> None:
+    config = POSITION_CONFIGS[position]
+    weekly = _weekly(
+        position,
+        config,
+        [{"season": 2022, "week": 1, "player_id": "p1", "position": position}],
+    )
+    depth_chart = pd.DataFrame(
+        [{"season": 2022, "player_id": "p1", "depth_chart_competition": 1}]
+    )
+
+    result = add_position_features(config, weekly, EMPTY_RED_ZONE, EMPTY_SNAP_PCT, depth_chart)
+
+    assert "depth_chart_competition" in feature_columns(config)
+    assert result.set_index("player_id").loc["p1", "depth_chart_competition"] == 1
 
 
 @pytest.mark.parametrize("position", list(POSITION_CONFIGS))
@@ -55,7 +74,7 @@ def test_position_share_feature_is_blind_to_the_current_and_later_weeks(position
         ],
     )
 
-    result = add_position_features(config, weekly, EMPTY_RED_ZONE, EMPTY_SNAP_PCT)
+    result = add_position_features(config, weekly, EMPTY_RED_ZONE, EMPTY_SNAP_PCT, EMPTY_DEPTH_CHART)
 
     week1 = result.loc[result["week"] == 1, feature_name]
     assert week1.isna().all()  # no prior weeks this season yet
@@ -104,7 +123,7 @@ def test_position_share_feature_uses_all_positions_for_team_totals(position: str
         ]
     )
 
-    result = add_position_features(config, weekly, EMPTY_RED_ZONE, EMPTY_SNAP_PCT)
+    result = add_position_features(config, weekly, EMPTY_RED_ZONE, EMPTY_SNAP_PCT, EMPTY_DEPTH_CHART)
 
     week2 = result.loc[result["week"] == 2].iloc[0]
     # A teammate at a different position must still count toward the team total
@@ -113,10 +132,45 @@ def test_position_share_feature_uses_all_positions_for_team_totals(position: str
 
 
 @pytest.mark.network
+def test_build_position_model_projections_supports_tabfm_backend() -> None:
+    config = POSITION_CONFIGS["RB"]
+    rng_rows = [
+        {
+            "season": 2020 + (i % 3),
+            "week": 1 + (i % 10),
+            "player_id": f"p{i % 5}",
+            "carries": float(i % 20),
+            "rushing_yards": float((i % 20) * 4),
+        }
+        for i in range(40)
+    ]
+    weekly = _weekly("RB", config, rng_rows)
+
+    result = build_position_model_projections(
+        config,
+        weekly,
+        EMPTY_RED_ZONE,
+        EMPTY_SNAP_PCT,
+        EMPTY_DEPTH_CHART,
+        train_through_season=2022,
+        target_season=2023,
+        eligible_player_ids={"p0", "p1", "p2", "p3", "p4"},
+        model_backend="tabfm",
+    )
+
+    assert len(result) > 0
+    for stat in config.raw_stat_columns:
+        assert (result[f"{stat}_p10"] <= result[f"{stat}_p50"]).all(), stat
+        assert (result[f"{stat}_p50"] <= result[f"{stat}_p90"]).all(), stat
+
+
+@pytest.mark.network
 def test_build_position_model_projections_produces_monotonic_quantiles_for_every_position() -> (
     None
 ):
+    from ff_model.depth_chart import depth_chart_competition_history
     from ff_model.nflverse import (
+        load_draft_picks,
         load_offense_snap_pct,
         load_red_zone_rush_attempts,
         load_seasonal_rosters,
@@ -127,10 +181,12 @@ def test_build_position_model_projections_produces_monotonic_quantiles_for_every
 
     seasons = list(range(2018, 2023))
     weekly = load_weekly_stats(seasons)
-    rosters = load_seasonal_rosters(seasons)
+    rosters = load_seasonal_rosters(seasons + [2023])
     pfr_id_by_player_id = pfr_id_crosswalk(rosters)
     snap_pct = load_offense_snap_pct(seasons, pfr_id_by_player_id)
     red_zone = load_red_zone_rush_attempts(seasons)
+    draft_picks = load_draft_picks(seasons + [2023])
+    depth_chart_history = depth_chart_competition_history(rosters, draft_picks, seasons + [2023])
 
     for position, config in POSITION_CONFIGS.items():
         player_ids = set(
@@ -143,6 +199,7 @@ def test_build_position_model_projections_produces_monotonic_quantiles_for_every
             weekly,
             red_zone,
             snap_pct,
+            depth_chart_history,
             train_through_season=2022,
             target_season=2023,
             eligible_player_ids=sample_ids,

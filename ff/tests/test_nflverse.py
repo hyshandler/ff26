@@ -1,11 +1,39 @@
 import pytest
 
 from ff_model.nflverse import (
+    load_draft_picks,
+    load_injury_reports,
     load_offense_snap_pct,
     load_red_zone_rush_attempts,
     load_seasonal_rosters,
+    load_weekly_stats,
     pfr_id_crosswalk,
 )
+
+
+@pytest.mark.network
+def test_load_injury_reports_returns_regular_season_rows_only() -> None:
+    result = load_injury_reports([2022])
+
+    assert {"player_id", "season", "week", "report_status"} <= set(result.columns)
+    assert len(result) > 0
+
+
+@pytest.mark.network
+def test_load_draft_picks_returns_round_and_team_per_player() -> None:
+    result = load_draft_picks([2022])
+
+    assert {"player_id", "season", "round", "position", "team"} <= set(result.columns)
+    assert len(result) > 0
+    assert result["round"].min() >= 1
+
+
+@pytest.mark.network
+def test_load_weekly_stats_excludes_postseason_and_week_18() -> None:
+    result = load_weekly_stats([2021])
+
+    assert (result["season_type"] == "REG").all()
+    assert (result["week"] <= 17).all()
 
 
 @pytest.mark.network

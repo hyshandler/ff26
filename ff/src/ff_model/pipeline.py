@@ -2,7 +2,11 @@ from dataclasses import dataclass
 
 import pandas as pd
 
+from ff_model.depth_chart import depth_chart_competition_history
+from ff_model.games_played import estimate_games_played
 from ff_model.nflverse import (
+    load_draft_picks,
+    load_injury_reports,
     load_offense_snap_pct,
     load_red_zone_rush_attempts,
     load_seasonal_rosters,
@@ -11,6 +15,7 @@ from ff_model.nflverse import (
 )
 from ff_model.position_config import POSITION_CONFIGS
 from ff_model.position_model import build_position_model_projections
+from ff_model.scoring import PPR, score_projections
 from ff_model.veterans import veteran_player_ids
 
 MIN_CAREER_GAMES = 16
@@ -68,15 +73,34 @@ def build_position_projections(
     )
     snap_pct = load_offense_snap_pct(weekly_seasons, pfr_id_by_player_id)
 
+    draft_picks = load_draft_picks(weekly_seasons + [target_season])
+    depth_chart_history = depth_chart_competition_history(
+        rosters, draft_picks, weekly_seasons + [target_season]
+    )
+
     predictions = build_position_model_projections(
         config,
         weekly_all_positions,
         red_zone_carries,
         snap_pct,
+        depth_chart_history,
         train_through_season=train_through_season,
         target_season=target_season,
         eligible_player_ids=eligible,
     )
+
+    injury_reports = load_injury_reports(weekly_seasons)
+    games_played_estimate = estimate_games_played(
+        rosters,
+        weekly,
+        injury_reports,
+        train_through_season=train_through_season,
+        target_season=target_season,
+        player_ids=eligible,
+    )
+    predictions["games_played_estimate"] = predictions["player_id"].map(games_played_estimate)
+
+    predictions = score_projections(predictions, PPR)
 
     player_names = rosters.drop_duplicates("player_id").set_index("player_id")["player_name"]
     predictions.insert(1, "player_name", predictions["player_id"].map(player_names))

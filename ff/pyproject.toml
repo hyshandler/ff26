@@ -11,7 +11,9 @@ dependencies = [
     "lightgbm>=4.6.0",
     "nfl-data-py>=0.3.2",
     "pandas>=2.2",
+    "requests>=2.34.2",
     "scikit-learn>=1.9.0",
+    "tabpfn>=8.0.8",
 ]
 
 [build-system]
@@ -27,7 +29,7 @@ dev = [
 
 [tool.pytest.ini_options]
 markers = [
-    "network: tests that hit the real nflverse data source",
+    "network: tests that hit the real nflverse data source or download TabFM model weights",
 ]
 
 [tool.mypy]
@@ -36,4 +38,12 @@ strict = true
 
 [[tool.mypy.overrides]]
 module = "nfl_data_py"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tabpfn.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "appdirs"
 ignore_missing_imports = true
