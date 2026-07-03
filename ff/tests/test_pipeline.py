@@ -3,6 +3,7 @@ import pytest
 
 from ff_model.pipeline import (
     PositionProjections,
+    add_full_projection,
     build_position_projections,
     combine_position_projections,
 )
@@ -29,10 +30,20 @@ def test_build_position_projections_for_rb_against_real_historical_seasons() -> 
         "fantasy_points_p10",
         "fantasy_points_p50",
         "fantasy_points_p90",
+        "full_projection_p10",
+        "full_projection_p50",
+        "full_projection_p90",
     } <= set(projections.columns)
     assert projections["games_played_estimate"].between(0, 17).all()
     assert (projections["fantasy_points_p10"] <= projections["fantasy_points_p50"]).all()
     assert (projections["fantasy_points_p50"] <= projections["fantasy_points_p90"]).all()
+    assert (projections["full_projection_p10"] <= projections["full_projection_p50"]).all()
+    assert (projections["full_projection_p50"] <= projections["full_projection_p90"]).all()
+    pd.testing.assert_series_equal(
+        projections["full_projection_p50"],
+        projections["fantasy_points_p50"] * projections["games_played_estimate"],
+        check_names=False,
+    )
     for stat in POSITION_CONFIGS["RB"].raw_stat_columns:
         for quantile_column in (f"{stat}_p10", f"{stat}_p50", f"{stat}_p90"):
             assert quantile_column in projections.columns
@@ -89,3 +100,27 @@ def test_combine_position_projections_unions_columns_across_positions() -> None:
     assert {"player_id", "rushing_yards_p50", "passing_yards_p50"} <= set(combined.columns)
     rb_row = combined.set_index("player_id").loc["rb1"]
     assert pd.isna(rb_row["passing_yards_p50"])
+
+
+def test_full_projection_multiplies_ppg_projection_by_games_played_estimate() -> None:
+    projections = pd.DataFrame(
+        [
+            {
+                "fantasy_points_p10": 5.0,
+                "fantasy_points_p50": 10.0,
+                "fantasy_points_p90": 15.0,
+                "games_played_estimate": 14.0,
+            }
+        ]
+    )
+
+    result = add_full_projection(projections)
+
+    row = result.loc[0]
+    assert row["full_projection_p10"] == 70.0
+    assert row["full_projection_p50"] == 140.0
+    assert row["full_projection_p90"] == 210.0
+
+    # Per ADR-0008: both components stay visible, not collapsed into one number.
+    assert row["fantasy_points_p50"] == 10.0
+    assert row["games_played_estimate"] == 14.0

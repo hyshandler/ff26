@@ -1,7 +1,42 @@
 import pandas as pd
 import pytest
 
-from ff_model.run_backtest import run_backtest
+from ff_model.run_backtest import run_backtest, with_actual_outcomes
+
+
+def test_joins_actual_games_played_and_actual_fantasy_points_for_the_target_season() -> None:
+    backtest_result = pd.DataFrame(
+        [{"player_id": "p1", "target_season": 2023, "full_projection_p50": 100.0}]
+    )
+    weekly = pd.DataFrame(
+        [
+            {"player_id": "p1", "season": 2023, "week": 1, "rushing_yards": 100, "rushing_tds": 1},
+            {"player_id": "p1", "season": 2023, "week": 2, "rushing_yards": 50, "rushing_tds": 0},
+        ]
+    )
+
+    result = with_actual_outcomes(backtest_result, weekly)
+
+    row = result.loc[0]
+    assert row["actual_games_played"] == 2
+    # PPR: (100 + 50) * 0.1 rushing_yards + 1 * 6 rushing_tds = 21.0
+    assert row["actual_fantasy_points"] == 21.0
+
+
+def test_a_player_absent_from_weekly_in_the_target_season_gets_zero_actual_outcomes() -> None:
+    """Per ADR-0008: a player who got hurt and never returned must still appear with a
+    real (zero) outcome, not be dropped -- dropping them would survivorship-bias the
+    backtest comparison toward players who stayed healthy."""
+    backtest_result = pd.DataFrame(
+        [{"player_id": "p1", "target_season": 2023, "full_projection_p50": 100.0}]
+    )
+    weekly = pd.DataFrame(columns=["player_id", "season", "week", "rushing_yards", "rushing_tds"])
+
+    result = with_actual_outcomes(backtest_result, weekly)
+
+    row = result.loc[0]
+    assert row["actual_games_played"] == 0
+    assert row["actual_fantasy_points"] == 0.0
 
 
 @pytest.mark.network

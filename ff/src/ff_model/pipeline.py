@@ -15,7 +15,7 @@ from ff_model.nflverse import (
 )
 from ff_model.position_config import POSITION_CONFIGS
 from ff_model.position_model import build_position_model_projections
-from ff_model.scoring import PPR, score_projections
+from ff_model.scoring import PPR, QUANTILE_SUFFIXES, score_projections
 from ff_model.veterans import veteran_player_ids
 
 MIN_CAREER_GAMES = 16
@@ -101,6 +101,7 @@ def build_position_projections(
     predictions["games_played_estimate"] = predictions["player_id"].map(games_played_estimate)
 
     predictions = score_projections(predictions, PPR)
+    predictions = add_full_projection(predictions)
 
     player_names = rosters.drop_duplicates("player_id").set_index("player_id")["player_name"]
     predictions.insert(1, "player_name", predictions["player_id"].map(player_names))
@@ -113,6 +114,21 @@ def build_position_projections(
         target_season=target_season,
         projections=predictions,
     )
+
+
+def add_full_projection(projections: pd.DataFrame) -> pd.DataFrame:
+    """Combines PPG Projection with Games-Played Estimate into the full Projection.
+
+    Per ADR-0008: full_projection_{p10,p50,p90} = fantasy_points_{p10,p50,p90} *
+    games_played_estimate, added alongside both source columns rather than
+    replacing them, so the components stay visible separately.
+    """
+    result = projections.copy()
+    for suffix in QUANTILE_SUFFIXES:
+        result[f"full_projection_{suffix}"] = (
+            result[f"fantasy_points_{suffix}"] * result["games_played_estimate"]
+        )
+    return result
 
 
 def combine_position_projections(
