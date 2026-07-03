@@ -43,7 +43,10 @@ class PositionProjections:
 
 
 def build_position_projections(
-    position: str, train_through_season: int, target_season: int
+    position: str,
+    train_through_season: int,
+    target_season: int,
+    include_depth_chart_competition: bool = True,
 ) -> PositionProjections:
     """Ingest -> filter -> predict -> output, for one position and one Walk-Forward split."""
     if target_season != train_through_season + 1:
@@ -87,6 +90,7 @@ def build_position_projections(
         train_through_season=train_through_season,
         target_season=target_season,
         eligible_player_ids=eligible,
+        include_depth_chart_competition=include_depth_chart_competition,
     )
 
     injury_reports = load_injury_reports(weekly_seasons)

@@ -21,12 +21,20 @@ def _average_stat_columns(config: PositionConfig) -> dict[str, str]:
     }
 
 
-def feature_columns(config: PositionConfig) -> list[str]:
+def feature_columns(
+    config: PositionConfig, include_depth_chart_competition: bool = True
+) -> list[str]:
     """Process/opportunity features first (primary split candidates for LightGBM),
-    then trailing raw-stat averages as secondary, lower-priority features."""
+    then trailing raw-stat averages as secondary, lower-priority features.
+
+    `include_depth_chart_competition=False` produces the without-feature baseline
+    used to backtest the Depth-Chart Competition Feature's effect (ADR-0004).
+    """
+    depth_chart_column = ["depth_chart_competition"] if include_depth_chart_competition else []
     return (
         list(config.share_stat_columns)
-        + ["trailing_snap_pct", "depth_chart_competition"]
+        + ["trailing_snap_pct"]
+        + depth_chart_column
         + [f"trailing_avg_{stat}" for stat in config.raw_stat_columns]
     )
 
@@ -112,11 +120,14 @@ def build_position_model_projections(
     target_season: int,
     eligible_player_ids: set[str],
     model_backend: ModelBackend = "lightgbm",
+    include_depth_chart_competition: bool = True,
 ) -> pd.DataFrame:
     """Train a quantile model per raw stat, and project each eligible Veteran.
 
     `model_backend` selects LightGBM (per ADR-0002) or TabFM (per ADR-0009's
     apples-to-apples comparison); both produce the same p10/p50/p90 output shape.
+    `include_depth_chart_competition=False` produces the without-feature baseline
+    used to backtest the Depth-Chart Competition Feature's effect (ADR-0004).
     """
     training = add_position_features(
         config, weekly_all_positions, red_zone_carries, snap_pct, depth_chart_history
@@ -143,7 +154,7 @@ def build_position_model_projections(
     )
     output["games"] = output["player_id"].map(games)
 
-    columns = feature_columns(config)
+    columns = feature_columns(config, include_depth_chart_competition)
     X_train = training[columns]
     X_predict = prediction_features[columns]
     for stat in config.raw_stat_columns:

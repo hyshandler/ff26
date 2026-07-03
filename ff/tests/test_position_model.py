@@ -41,6 +41,15 @@ def test_add_position_features_only_returns_that_positions_rows(position: str) -
     assert set(config.raw_stat_columns) <= set(result.columns)
 
 
+def test_feature_columns_can_exclude_depth_chart_competition_for_the_without_feature_baseline() -> None:
+    config = POSITION_CONFIGS["RB"]
+
+    assert "depth_chart_competition" in feature_columns(config)
+    assert "depth_chart_competition" not in feature_columns(
+        config, include_depth_chart_competition=False
+    )
+
+
 @pytest.mark.parametrize("position", list(POSITION_CONFIGS))
 def test_add_position_features_merges_the_depth_chart_competition_flag(position: str) -> None:
     config = POSITION_CONFIGS[position]
