@@ -1,0 +1,3 @@
+# Evaluate a tabular foundation model (TabFM) alongside LightGBM before committing to one for v1
+
+ADR-0002 chose LightGBM as the modeling approach. We're keeping that as the working baseline but also training a tabular foundation model (TabPFN-style pretrained TabFM) on the same per-position splits, no strong hypothesis yet — just an apples-to-apples comparison via the Walk-Forward Backtest and ADP Benchmark before locking in one approach for v1. Per-position quantile outputs (P10/P50/P90) stay the comparison bar for both, since boom/bust risk still matters as much as expected value. If TabFM doesn't clearly beat LightGBM on the backtest, LightGBM remains the v1 choice and this becomes a dead end rather than a rewrite.

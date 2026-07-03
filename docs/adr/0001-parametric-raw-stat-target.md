@@ -1,0 +1,3 @@
+# Predict raw stats and split PPG from Games-Played, not a single season-points number
+
+We considered predicting season-total fantasy points directly, but that bakes in one league's Scoring Formula and hides injury risk inside a single number. Instead the model predicts raw box-score/advanced-metric stats; a Scoring Formula is applied downstream to get a PPG Projection, which is then multiplied by a separately-modeled Games-Played Estimate to get a season total. This costs little extra modeling effort (any scoring system is a linear combination of stats) and generalizes to any league's rules without retraining, while making injury/availability risk visible instead of averaged away.

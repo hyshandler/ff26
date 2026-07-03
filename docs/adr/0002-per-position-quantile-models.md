@@ -1,0 +1,3 @@
+# Separate LightGBM model per position, with quantile regression for uncertainty
+
+Considered a single unified LightGBM model with position as a categorical feature, but QB/RB/WR/TE have wildly different feature distributions and target scales — a unified model risks tree splits being dominated by whichever position has the most data. We're training a separate model per position instead. Each model also outputs quantiles (P10/P50/P90), not just a point estimate, since boom/bust risk matters as much as expected value for draft strategy and the eventual cheat-sheet/draft-assistant layer will want risk-adjusted rankings — cheap to add now via LightGBM's native quantile objective, expensive to retrofit later.

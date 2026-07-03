@@ -1,0 +1,3 @@
+# Rookies excluded from v1; minimum-sample threshold for veterans
+
+Rookies have no NFL box-score/advanced-metric history, which is exactly what the v1 feature set is built from — projecting them would require a genuinely different feature space (college production, draft capital, combine metrics) that would stall the core Veteran model if bundled in now. Rookies are excluded from v1 entirely; a separate rookie submodel is v2. To keep the boundary honest, Veteran also requires a minimum career-games/snaps threshold, so second-year players with only a handful of career games don't sneak into training as veterans with effectively rookie-level sample noise.
