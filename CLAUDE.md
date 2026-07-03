@@ -26,3 +26,17 @@ full map). Key points:
 
 Since there's no actual code yet, the first productive step in this repo is almost always
 `/setup-matt-pocock-skills`, followed by whichever flow step matches the task at hand.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues (hyshandler/ff26) via the `gh` CLI; external PRs are not treated as a triage surface. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default label vocabulary (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
