@@ -17,7 +17,11 @@ def test_build_position_projections_for_rb_against_real_historical_seasons() -> 
     assert {"player_id", "player_name", "games", "position", "target_season"} <= set(
         projections.columns
     )
-    assert set(RAW_STAT_COLUMNS) <= set(projections.columns)
+    for stat in RAW_STAT_COLUMNS:
+        for quantile_column in (f"{stat}_p10", f"{stat}_p50", f"{stat}_p90"):
+            assert quantile_column in projections.columns
+        assert (projections[f"{stat}_p10"] <= projections[f"{stat}_p50"]).all()
+        assert (projections[f"{stat}_p50"] <= projections[f"{stat}_p90"]).all()
 
     # Every projected player must be a genuine Veteran: enough career games banked
     # before the target season, and not a rookie in it.

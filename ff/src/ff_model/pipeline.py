@@ -2,8 +2,14 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from ff_model.naive_baseline import predict_naive_baseline
-from ff_model.nflverse import load_seasonal_rosters, load_weekly_stats
+from ff_model.nflverse import (
+    load_offense_snap_pct,
+    load_red_zone_rush_attempts,
+    load_seasonal_rosters,
+    load_weekly_stats,
+    pfr_id_crosswalk,
+)
+from ff_model.rb_model import build_rb_projections
 from ff_model.veterans import veteran_player_ids
 
 MIN_CAREER_GAMES = 16
@@ -33,30 +39,36 @@ class PositionProjections:
 def build_position_projections(
     position: str, train_through_season: int, target_season: int
 ) -> PositionProjections:
-    """Ingest -> filter -> predict -> output, for one position and one Walk-Forward split.
-
-    The naive statistical baseline stands in for the real per-position model until
-    a later slice replaces it with LightGBM; this seam's shape (and output schema)
-    stays the same when that happens.
-    """
+    """Ingest -> filter -> predict -> output, for one position and one Walk-Forward split."""
     if target_season != train_through_season + 1:
         raise ValueError(
             "target_season must be train_through_season + 1 for the Walk-Forward Backtest"
         )
+    if position != "RB":
+        raise NotImplementedError(f"{position} projections aren't implemented yet (see issue #4)")
 
     weekly_seasons = list(range(EARLIEST_SEASON, train_through_season + 1))
-    weekly = load_weekly_stats(weekly_seasons)
-    weekly = weekly.loc[weekly["position"] == position]
+    weekly_all_positions = load_weekly_stats(weekly_seasons)
+    weekly = weekly_all_positions.loc[weekly_all_positions["position"] == position]
 
-    rosters = load_seasonal_rosters([target_season])
+    rosters = load_seasonal_rosters(weekly_seasons + [target_season])
     rosters = rosters.loc[rosters["position"] == position]
 
     eligible = veteran_player_ids(
         rosters, weekly, season=target_season, min_career_games=MIN_CAREER_GAMES
     )
 
-    predictions = predict_naive_baseline(
-        weekly, player_ids=eligible, through_season=train_through_season
+    pfr_id_by_player_id = pfr_id_crosswalk(rosters)
+    red_zone_carries = load_red_zone_rush_attempts(weekly_seasons)
+    snap_pct = load_offense_snap_pct(weekly_seasons, pfr_id_by_player_id)
+
+    predictions = build_rb_projections(
+        weekly_all_positions,
+        red_zone_carries,
+        snap_pct,
+        train_through_season=train_through_season,
+        target_season=target_season,
+        eligible_player_ids=eligible,
     )
 
     player_names = rosters.drop_duplicates("player_id").set_index("player_id")["player_name"]
