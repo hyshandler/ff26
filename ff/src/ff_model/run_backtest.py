@@ -51,3 +51,23 @@ def with_actual_outcomes(
     result["actual_games_played"] = result["actual_games_played"].fillna(0)
     result["actual_fantasy_points"] = result["actual_fantasy_points"].fillna(0.0)
     return result
+
+
+def with_adp_benchmark(backtest_result: pd.DataFrame, adp: pd.DataFrame, season: int) -> pd.DataFrame:
+    """Joins the ADP Benchmark (per ADR-0007) onto a `run_backtest` result's rows for
+    `season`, for comparison against the model's full Projection and the naive baseline.
+
+    `adp` is expected already crosswalked to `player_id` (see `crosswalk_adp_to_player_ids`).
+    Only rows with `target_season == season` are matched, since one call covers one
+    split's ADP data; a player missing from the crosswalk gets a NaN `adp` rather than
+    being dropped.
+    """
+    season_adp = adp.dropna(subset=["player_id"])[["player_id", "adp"]]
+
+    result = backtest_result.copy()
+    result["adp"] = pd.NA
+    mask = result["target_season"] == season
+    matched = result.loc[mask, ["player_id"]].merge(season_adp, on="player_id", how="left")["adp"]
+    matched.index = result.loc[mask].index
+    result.loc[mask, "adp"] = matched
+    return result
