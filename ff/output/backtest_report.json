@@ -1,0 +1,34 @@
+{
+  "QB": {
+    "n": 148,
+    "n_with_adp": 20,
+    "model_mae": 93.8922349446254,
+    "naive_mae": 91.96438815278017,
+    "model_spearman_vs_actual": 0.5046598463980887,
+    "adp_spearman_vs_actual": 0.4766917293233082
+  },
+  "RB": {
+    "n": 259,
+    "n_with_adp": 41,
+    "model_mae": 60.51266904454159,
+    "naive_mae": 57.23033079386849,
+    "model_spearman_vs_actual": 0.6102635646913286,
+    "adp_spearman_vs_actual": 0.3578397212543554
+  },
+  "WR": {
+    "n": 424,
+    "n_with_adp": 54,
+    "model_mae": 58.46638242696553,
+    "naive_mae": 59.536448529903765,
+    "model_spearman_vs_actual": 0.6482330362485703,
+    "adp_spearman_vs_actual": 0.7156987937033334
+  },
+  "TE": {
+    "n": 201,
+    "n_with_adp": 15,
+    "model_mae": 44.326910170032335,
+    "naive_mae": 39.49706152342094,
+    "model_spearman_vs_actual": 0.6628488452099375,
+    "adp_spearman_vs_actual": 0.48571428571428565
+  }
+}
