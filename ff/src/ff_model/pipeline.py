@@ -9,7 +9,8 @@ from ff_model.nflverse import (
     load_weekly_stats,
     pfr_id_crosswalk,
 )
-from ff_model.rb_model import build_rb_projections
+from ff_model.position_config import POSITION_CONFIGS
+from ff_model.position_model import build_position_model_projections
 from ff_model.veterans import veteran_player_ids
 
 MIN_CAREER_GAMES = 16
@@ -44,8 +45,9 @@ def build_position_projections(
         raise ValueError(
             "target_season must be train_through_season + 1 for the Walk-Forward Backtest"
         )
-    if position != "RB":
-        raise NotImplementedError(f"{position} projections aren't implemented yet (see issue #4)")
+    if position not in POSITION_CONFIGS:
+        raise ValueError(f"Unknown position: {position!r}")
+    config = POSITION_CONFIGS[position]
 
     weekly_seasons = list(range(EARLIEST_SEASON, train_through_season + 1))
     weekly_all_positions = load_weekly_stats(weekly_seasons)
@@ -59,10 +61,15 @@ def build_position_projections(
     )
 
     pfr_id_by_player_id = pfr_id_crosswalk(rosters)
-    red_zone_carries = load_red_zone_rush_attempts(weekly_seasons)
+    red_zone_carries = (
+        load_red_zone_rush_attempts(weekly_seasons)
+        if config.needs_red_zone_data
+        else pd.DataFrame(columns=["season", "week", "player_id", "red_zone_carries"])
+    )
     snap_pct = load_offense_snap_pct(weekly_seasons, pfr_id_by_player_id)
 
-    predictions = build_rb_projections(
+    predictions = build_position_model_projections(
+        config,
         weekly_all_positions,
         red_zone_carries,
         snap_pct,
@@ -82,3 +89,16 @@ def build_position_projections(
         target_season=target_season,
         projections=predictions,
     )
+
+
+def combine_position_projections(
+    projections: list[PositionProjections],
+) -> pd.DataFrame:
+    """Concatenate every position's output into one combined dataframe.
+
+    A thin combination step, not a modeling seam: positions predict different raw
+    stats (QB's passing_yards_p50 has no RB equivalent), so the combined frame's
+    columns are the union across positions, NaN-filled wherever a stat doesn't
+    apply to a given row's position.
+    """
+    return pd.concat([p.projections for p in projections], ignore_index=True)
