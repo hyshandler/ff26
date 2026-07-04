@@ -1,9 +1,24 @@
 import pandas as pd
 
 from ff_model.backtest import walk_forward_splits
+from ff_model.experience_features import ExperienceFeature
 from ff_model.features import MultiSeasonWindow
+from ff_model.nflverse import SNAP_COUNTS_EARLIEST_SEASON
 from ff_model.pipeline import build_position_projections
 from ff_model.scoring import PPR, ScoringFormula
+from ff_model.strength_of_schedule import SosFeature
+
+STANDARD_BACKTEST_SEASONS = list(range(SNAP_COUNTS_EARLIEST_SEASON, 2025))
+"""Default season range for the Walk-Forward Backtest.
+
+Starts at `SNAP_COUNTS_EARLIEST_SEASON` (2012) -- nflverse's Pro-Football-Reference-sourced
+snap counts are the last of the model's feature sources to become available (draft picks and
+play-by-play go back much further, injury reports to 2009), so this is the earliest split
+where every split's training years have a fully-featured `trailing_snap_pct`, not a silently
+missing one. Ends at 2024, the most recent season nflverse's weekly data covers as of this
+writing -- 2025 isn't published yet (`import_weekly_data([2025])` 404s); bump this once a
+newer season is confirmed available.
+"""
 
 
 def run_backtest(
@@ -12,6 +27,8 @@ def run_backtest(
     min_train_seasons: int,
     include_depth_chart_competition: bool = True,
     multi_season_window: MultiSeasonWindow | None = None,
+    experience_feature: ExperienceFeature | None = None,
+    sos_feature: SosFeature | None = None,
 ) -> pd.DataFrame:
     """Run the Walk-Forward Backtest for one position and concatenate every split's output."""
     splits = walk_forward_splits(seasons, min_train_seasons)
@@ -24,6 +41,8 @@ def run_backtest(
             target_season,
             include_depth_chart_competition=include_depth_chart_competition,
             multi_season_window=multi_season_window,
+            experience_feature=experience_feature,
+            sos_feature=sos_feature,
         )
         frame = result.projections.copy()
         frame.insert(1, "train_through_season", train_through_season)

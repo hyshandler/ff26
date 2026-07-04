@@ -58,6 +58,12 @@ def season_ending_shares(
     Used to build the features a player carries *into* the next, not-yet-played
     season — there's no leakage risk here since `season` is entirely in the past
     relative to the season being projected.
+
+    Known gap: a player traded mid-season has their whole-season stat total divided
+    by only ONE team's season total (whichever team `drop_duplicates` happens to keep),
+    not a per-team-weighted denominator -- unlike `add_trailing_team_shares`, which
+    joins by `(season, week, team)` and doesn't have this issue. Left as-is: affects a
+    small number of in-season-traded skill players per year, judged low-impact.
     """
     season_weekly = weekly_all_positions.loc[weekly_all_positions["season"] == season]
     player_team = season_weekly.drop_duplicates("player_id").set_index("player_id")[team_column]

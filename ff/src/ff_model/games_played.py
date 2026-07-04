@@ -1,15 +1,10 @@
 import pandas as pd
 
-AGE_BUCKET_EDGES = [0, 24, 27, 30, 100]
-AGE_BUCKET_LABELS = ["<24", "24-26", "27-29", "30+"]
+from ff_model.age_buckets import age_bucket
 
 RECENT_INJURY_WEEKS = (15, 16, 17)
 """The final weeks of a REG season (per FANTASY_REGULAR_SEASON_MAX_WEEK) used as the
 'finished the season hurt' proxy, since nflverse has no clean IR/season-ending flag."""
-
-
-def _age_bucket(age: pd.Series) -> pd.Series:
-    return pd.cut(age, bins=AGE_BUCKET_EDGES, labels=AGE_BUCKET_LABELS, right=False)
 
 
 def _recently_injured_player_ids(injury_reports: pd.DataFrame, season: int) -> set[str]:
@@ -32,8 +27,13 @@ def estimate_games_played(
     """Games-Played Estimate per CONTEXT.md/ADR-0005: an empirical (position, age_bucket)
     base rate, split by a recent-major-injury flag, computed only from seasons through
     `train_through_season`."""
+    # A player traded mid-season can appear once per team in nflverse's seasonal rosters
+    # for the same (player_id, season); team doesn't affect this estimate, so an arbitrary
+    # one of the duplicates is fine -- same dedup `depth_chart.py` already needs.
+    rosters = rosters.drop_duplicates(subset=["player_id", "season"])
+
     training_rosters = rosters.loc[rosters["season"] <= train_through_season].copy()
-    training_rosters["age_bucket"] = _age_bucket(training_rosters["age"])
+    training_rosters["age_bucket"] = age_bucket(training_rosters["age"])
 
     games_played = weekly.groupby(["player_id", "season"]).size().rename("games")
     training_rosters = training_rosters.merge(
@@ -49,7 +49,7 @@ def estimate_games_played(
     ].mean()
 
     target_rosters = rosters.loc[rosters["season"] == target_season].copy()
-    target_rosters["age_bucket"] = _age_bucket(target_rosters["age"])
+    target_rosters["age_bucket"] = age_bucket(target_rosters["age"])
     target_rosters["flagged"] = target_rosters["player_id"].isin(flagged_ids)
     target_rosters = target_rosters.loc[target_rosters["player_id"].isin(player_ids)]
 

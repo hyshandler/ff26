@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 
 from ff_model.data_availability import assert_no_participation_sourced_features
+from ff_model.experience_features import ExperienceFeature
 from ff_model.features import MultiSeasonWindow
+from ff_model.strength_of_schedule import SosFeature
 
 
 @dataclass(frozen=True)
@@ -28,6 +30,16 @@ class PositionConfig:
 
     multi_season_decay: float = 0.5
     """Decay rate for `multi_season_window="recency_weighted"`; unused otherwise."""
+
+    experience_feature: ExperienceFeature = "none"
+    """This position's winning age/experience encoding, once a backtest shows one clearly
+    beats the without-experience-feature baseline (age, years in league, career games, or
+    a career-stage bucket) -- "none" until then."""
+
+    sos_feature: SosFeature = "none"
+    """This position's winning Strength-of-Schedule encoding (season-wide schedule average,
+    or a trailing average aligned to actual games played), once a backtest shows one clearly
+    beats the without-SOS-feature baseline -- "none" until then."""
 
     @property
     def needs_red_zone_data(self) -> bool:

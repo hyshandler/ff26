@@ -2,8 +2,22 @@ import pandas as pd
 import pytest
 
 from ff_model.adp import crosswalk_adp_to_player_ids, load_adp
+from ff_model.backtest import walk_forward_splits
 from ff_model.nflverse import load_seasonal_rosters
-from ff_model.run_backtest import run_backtest, with_actual_outcomes, with_adp_benchmark
+from ff_model.run_backtest import (
+    STANDARD_BACKTEST_SEASONS,
+    run_backtest,
+    with_actual_outcomes,
+    with_adp_benchmark,
+)
+
+
+def test_standard_backtest_seasons_produces_ten_splits_starting_at_the_snap_count_floor() -> None:
+    splits = walk_forward_splits(STANDARD_BACKTEST_SEASONS, min_train_seasons=3)
+
+    assert splits[0] == (2014, 2015)
+    assert splits[-1] == (2023, 2024)
+    assert len(splits) == 10
 
 
 def test_joins_actual_games_played_and_actual_fantasy_points_for_the_target_season() -> None:

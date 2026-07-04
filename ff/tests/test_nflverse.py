@@ -5,6 +5,7 @@ from ff_model.nflverse import (
     load_injury_reports,
     load_offense_snap_pct,
     load_red_zone_rush_attempts,
+    load_schedules,
     load_seasonal_rosters,
     load_weekly_stats,
     pfr_id_crosswalk,
@@ -55,3 +56,17 @@ def test_load_offense_snap_pct_crosswalks_to_gsis_player_id() -> None:
     assert {"player_id", "season", "week", "offense_pct"} <= set(result.columns)
     assert len(result) > 0
     assert result["offense_pct"].between(0, 1).all()
+
+
+@pytest.mark.network
+def test_load_schedules_gives_each_team_one_row_per_week_with_its_opponent() -> None:
+    result = load_schedules([2023])
+
+    assert {"season", "week", "team", "opponent_team"} <= set(result.columns)
+    assert (result["week"] <= 17).all()
+    # Every team plays each other team, never itself.
+    assert (result["team"] != result["opponent_team"]).all()
+    # 32 teams x ~17 games (minus byes) each -- one row per team per game played.
+    kc_week1 = result.loc[(result["team"] == "KC") & (result["week"] == 1) & (result["season"] == 2023)]
+    assert len(kc_week1) == 1
+    assert kc_week1.iloc[0]["opponent_team"] == "DET"

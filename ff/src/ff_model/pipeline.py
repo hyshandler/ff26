@@ -3,6 +3,13 @@ from dataclasses import dataclass
 import pandas as pd
 
 from ff_model.depth_chart import depth_chart_competition_history
+from ff_model.experience_features import (
+    ExperienceFeature,
+    age_history,
+    career_games_history,
+    career_stage_bucket_history,
+    years_in_league_history,
+)
 from ff_model.features import (
     MultiSeasonWindow,
     multi_season_career_averages,
@@ -15,6 +22,7 @@ from ff_model.nflverse import (
     load_injury_reports,
     load_offense_snap_pct,
     load_red_zone_rush_attempts,
+    load_schedules,
     load_seasonal_rosters,
     load_weekly_stats,
     pfr_id_crosswalk,
@@ -22,6 +30,13 @@ from ff_model.nflverse import (
 from ff_model.position_config import POSITION_CONFIGS
 from ff_model.position_model import build_position_model_projections, multi_season_stat_columns
 from ff_model.scoring import PPR, QUANTILE_SUFFIXES, score_projections
+from ff_model.strength_of_schedule import (
+    SosFeature,
+    season_wide_sos_by_player,
+    season_wide_sos_history,
+    trailing_points_allowed,
+    weekly_points_allowed,
+)
 from ff_model.veterans import veteran_player_ids
 
 MIN_CAREER_GAMES = 16
@@ -56,6 +71,8 @@ def build_position_projections(
     multi_season_window: MultiSeasonWindow | None = None,
     multi_season_n_seasons: int | None = None,
     multi_season_decay: float | None = None,
+    experience_feature: ExperienceFeature | None = None,
+    sos_feature: SosFeature | None = None,
 ) -> PositionProjections:
     """Ingest -> filter -> predict -> output, for one position and one Walk-Forward split.
 
@@ -80,6 +97,10 @@ def build_position_projections(
         multi_season_n_seasons = config.multi_season_n_seasons
     if multi_season_decay is None:
         multi_season_decay = config.multi_season_decay
+    if experience_feature is None:
+        experience_feature = config.experience_feature
+    if sos_feature is None:
+        sos_feature = config.sos_feature
 
     weekly_seasons = list(range(EARLIEST_SEASON, train_through_season + 1))
     weekly_all_positions = load_weekly_stats(weekly_seasons)
@@ -122,6 +143,32 @@ def build_position_projections(
                 weekly, stat_columns, all_seasons, decay=multi_season_decay
             )
 
+    experience_history = None
+    if experience_feature != "none":
+        all_seasons = weekly_seasons + [target_season]
+        if experience_feature == "age":
+            experience_history = age_history(rosters, all_seasons)
+        elif experience_feature == "years_in_league":
+            experience_history = years_in_league_history(rosters, all_seasons)
+        elif experience_feature == "career_stage_bucket":
+            experience_history = career_stage_bucket_history(rosters, all_seasons)
+        else:
+            experience_history = career_games_history(weekly, all_seasons)
+
+    sos_history = None
+    league_wide_trailing_points_allowed = None
+    if sos_feature != "none":
+        all_seasons = weekly_seasons + [target_season]
+        points_allowed = weekly_points_allowed(weekly_all_positions, PPR)
+        if sos_feature == "season_wide":
+            schedule = load_schedules(all_seasons)
+            sos_by_team = season_wide_sos_history(
+                schedule, points_allowed, position=position, seasons=all_seasons
+            )
+            sos_history = season_wide_sos_by_player(sos_by_team, rosters)
+        else:
+            league_wide_trailing_points_allowed = trailing_points_allowed(points_allowed)
+
     predictions = build_position_model_projections(
         config,
         weekly_all_positions,
@@ -133,6 +180,11 @@ def build_position_projections(
         eligible_player_ids=eligible,
         include_depth_chart_competition=include_depth_chart_competition,
         multi_season_history=multi_season_history,
+        experience_history=experience_history,
+        experience_feature=experience_feature,
+        sos_history=sos_history,
+        league_wide_trailing_points_allowed=league_wide_trailing_points_allowed,
+        sos_feature=sos_feature,
     )
 
     injury_reports = load_injury_reports(weekly_seasons)

@@ -147,6 +147,112 @@ def test_feature_columns_can_include_multi_season_averages() -> None:
     assert "multi_season_avg_carries" in feature_columns(config, include_multi_season=True)
 
 
+@pytest.mark.parametrize(
+    "sos_feature,expected_column", [("season_wide", "season_wide_sos"), ("actual_games", "trailing_sos_faced")]
+)
+def test_feature_columns_can_include_a_sos_feature(sos_feature: str, expected_column: str) -> None:
+    config = POSITION_CONFIGS["RB"]
+
+    assert expected_column not in feature_columns(config)
+    assert expected_column in feature_columns(config, sos_feature=sos_feature)
+
+
+@pytest.mark.parametrize(
+    "experience_feature,expected_column",
+    [
+        ("age", "age"),
+        ("years_in_league", "years_in_league"),
+        ("career_games", "career_games"),
+        ("career_stage_bucket", "career_stage_bucket"),
+    ],
+)
+def test_feature_columns_can_include_an_experience_feature(
+    experience_feature: str, expected_column: str
+) -> None:
+    config = POSITION_CONFIGS["RB"]
+
+    assert expected_column not in feature_columns(config)
+    assert expected_column in feature_columns(config, experience_feature=experience_feature)
+
+
+@pytest.mark.parametrize("position", list(POSITION_CONFIGS))
+def test_add_position_features_merges_the_experience_history(position: str) -> None:
+    config = POSITION_CONFIGS[position]
+    weekly = _weekly(
+        position,
+        config,
+        [{"season": 2022, "week": 1, "player_id": "p1", "position": position}],
+    )
+    experience_history = pd.DataFrame([{"season": 2022, "player_id": "p1", "age": 27.0}])
+
+    result = add_position_features(
+        config,
+        weekly,
+        EMPTY_RED_ZONE,
+        EMPTY_SNAP_PCT,
+        EMPTY_DEPTH_CHART,
+        experience_history=experience_history,
+    )
+
+    assert result.set_index("player_id").loc["p1", "age"] == 27.0
+
+
+def test_add_position_features_merges_season_wide_sos_history() -> None:
+    config = POSITION_CONFIGS["RB"]
+    weekly = _weekly(
+        "RB",
+        config,
+        [{"season": 2022, "week": 1, "player_id": "p1"}],
+    )
+    sos_history = pd.DataFrame([{"season": 2022, "player_id": "p1", "season_wide_sos": 12.5}])
+
+    result = add_position_features(
+        config,
+        weekly,
+        EMPTY_RED_ZONE,
+        EMPTY_SNAP_PCT,
+        EMPTY_DEPTH_CHART,
+        sos_history=sos_history,
+        sos_feature="season_wide",
+    )
+
+    assert result.set_index("player_id").loc["p1", "season_wide_sos"] == 12.5
+
+
+def test_add_position_features_computes_actual_games_sos_from_each_players_own_matchups() -> None:
+    config = POSITION_CONFIGS["RB"]
+    weekly = _weekly(
+        "RB",
+        config,
+        [
+            {"season": 2023, "week": 1, "player_id": "p1", "opponent_team": "NYJ"},
+            {"season": 2023, "week": 2, "player_id": "p1", "opponent_team": "MIA"},
+        ],
+    )
+    league_wide_trailing_points_allowed = pd.DataFrame(
+        [
+            {"season": 2023, "week": 1, "team": "NYJ", "position": "RB", "trailing_points_allowed": 10.0},
+            {"season": 2023, "week": 2, "team": "MIA", "position": "RB", "trailing_points_allowed": 30.0},
+        ]
+    )
+
+    result = add_position_features(
+        config,
+        weekly,
+        EMPTY_RED_ZONE,
+        EMPTY_SNAP_PCT,
+        EMPTY_DEPTH_CHART,
+        league_wide_trailing_points_allowed=league_wide_trailing_points_allowed,
+        sos_feature="actual_games",
+    )
+
+    week1 = result.loc[result["week"] == 1, "trailing_sos_faced"]
+    assert week1.isna().all()  # no prior actual games yet this season
+
+    week2 = result.loc[result["week"] == 2, "trailing_sos_faced"].item()
+    assert week2 == 10.0  # trailing average of week 1's matchup (NYJ, 10.0) only
+
+
 @pytest.mark.parametrize("position", list(POSITION_CONFIGS))
 def test_add_position_features_merges_the_multi_season_history(position: str) -> None:
     config = POSITION_CONFIGS[position]
