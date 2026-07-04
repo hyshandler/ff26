@@ -92,12 +92,15 @@ def with_adp_benchmark(backtest_result: pd.DataFrame, adp: pd.DataFrame, season:
     `adp` is expected already crosswalked to `player_id` (see `crosswalk_adp_to_player_ids`).
     Only rows with `target_season == season` are matched, since one call covers one
     split's ADP data; a player missing from the crosswalk gets a NaN `adp` rather than
-    being dropped.
+    being dropped. Safe to call repeatedly, chaining one season at a time (as a full
+    backtest's ADP join does) -- an existing `adp` column from an earlier call is kept
+    for every row outside `season`, not reset.
     """
     season_adp = adp.dropna(subset=["player_id"])[["player_id", "adp"]]
 
     result = backtest_result.copy()
-    result["adp"] = pd.NA
+    if "adp" not in result.columns:
+        result["adp"] = pd.NA
     mask = result["target_season"] == season
     matched = result.loc[mask, ["player_id"]].merge(season_adp, on="player_id", how="left")["adp"]
     matched.index = result.loc[mask].index

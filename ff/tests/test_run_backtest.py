@@ -71,6 +71,27 @@ def test_joins_adp_onto_backtest_rows_matching_the_adps_season() -> None:
     assert pd.isna(by_season.loc[2023, "adp"])
 
 
+def test_with_adp_benchmark_preserves_earlier_seasons_when_called_repeatedly() -> None:
+    """Production code chains this across every season in a backtest
+    (`backtest = with_adp_benchmark(backtest, adp, season=target)` in a loop) --
+    a second call for a later season must not wipe out an earlier call's joined ADP."""
+    backtest_result = pd.DataFrame(
+        [
+            {"player_id": "p1", "target_season": 2022, "full_projection_p50": 100.0},
+            {"player_id": "p2", "target_season": 2023, "full_projection_p50": 110.0},
+        ]
+    )
+    adp_2022 = pd.DataFrame([{"name": "Player One", "position": "RB", "player_id": "p1", "adp": 14.9}])
+    adp_2023 = pd.DataFrame([{"name": "Player Two", "position": "RB", "player_id": "p2", "adp": 22.1}])
+
+    result = with_adp_benchmark(backtest_result, adp_2022, season=2022)
+    result = with_adp_benchmark(result, adp_2023, season=2023)
+
+    by_season = result.set_index("target_season")
+    assert by_season.loc[2022, "adp"] == 14.9
+    assert by_season.loc[2023, "adp"] == 22.1
+
+
 def test_a_player_missing_from_the_adp_crosswalk_gets_a_nan_adp() -> None:
     backtest_result = pd.DataFrame(
         [{"player_id": "p1", "target_season": 2022, "full_projection_p50": 100.0}]
