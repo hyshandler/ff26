@@ -1,0 +1,5 @@
+# Matched-population comparison is the headline evaluation metric
+
+Every pre-2026-07-04 "model beats ADP" claim compared the model's Spearman ρ over the full backtest population (every eligible Veteran, including undraftable depth players) against ADP's ρ over only the ADP-matched subset. These are different populations, and the full-population number is inflated by the trivial sub-task of ranking stars above bench players. Measured apples-to-apples on the Matched Population, ADP beats the model at all four positions (see `docs/research/model-vs-adp-matched-population.md`).
+
+The headline development metric is therefore **Spearman ρ vs. the Answer Key, computed on the Matched Population, per position**. The Answer Key is actual season **total** fantasy points (not PPG): total points are what win leagues and what ADP itself prices in, and they force the Games-Played Estimate to earn its keep rather than letting the model compete on a points-if-playing basis ADP never gets to use. Full-population ρ may still be reported for context but must never be cited as evidence of edge over ADP.

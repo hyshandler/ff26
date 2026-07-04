@@ -1,0 +1,5 @@
+# Standalone model first; ADP Blend deferred to a later layer
+
+Using ADP as a model input is not leakage — ADP is available before every draft, and any improvement of a blend over raw ADP is by construction information the model added that the crowd missed. A blend would almost certainly reach "better than ADP" faster than a standalone model can. But it anchors projections to crowd consensus and inherits ADP's blind spots, and the owner wants to see how far a fully independent model gets first.
+
+v2 therefore builds and evaluates the **standalone** model only (no ADP-derived features), with the ADP Blend as an explicitly planned later layer once standalone progress plateaus or the gap closes. The blend, when it comes, shares the whole pipeline — roughly "add ADP as a feature / regress model rank toward ADP rank," not a second codebase. Win conditions: standalone tiers players at least as well as ADP at every position and better at ≥2 (per ADR-0011) is the v2 target; standalone beating ADP on matched-population Spearman everywhere is the stretch goal.

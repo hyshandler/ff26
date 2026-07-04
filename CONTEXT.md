@@ -36,8 +36,28 @@ The evaluation method: train on seasons 1..N, predict season N+1, slide forward 
 _Avoid_: cross-validation, k-fold
 
 **TabFM**:
-A pretrained tabular foundation model (TabPFN-style), being evaluated as a candidate alongside LightGBM per position before v1 commits to one approach. See `docs/adr/0009-evaluate-tabfm-alongside-lightgbm.md`.
+A pretrained tabular foundation model (TabPFN-style), evaluated as a candidate alongside LightGBM per ADR-0009; the evaluation was blocked by TabPFN's 10k-row training cap, so v1/v2 are LightGBM-only.
 _Avoid_: TabPFN (the general term is TabFM here since the specific library choice isn't locked in)
+
+**Matched Population**:
+the subset of backtest players that have a real ADP for the target season — the players relevant enough that the crowd actually drafted them. All model-vs-ADP comparisons must be computed on this population for both sides (`docs/adr/0010-matched-population-headline-metric.md`); full-population numbers are inflated by trivially ranking stars over bench players.
+_Avoid_: full-population comparison (as an edge claim)
+
+**Answer Key**:
+the retrospective-optimal order for a season: players ranked by actual season total fantasy points (per position), or by VOR-adjusted actual points for the pooled cross-position ranking (`docs/adr/0012-vor-adjusted-pooled-scoreboard.md`). Both the model's preseason list and ADP's are scored against it.
+_Avoid_: ground truth (ambiguous about total-points vs PPG)
+
+**Tier**:
+a band of players with similar actual season value; derived per position from each season's actual outcomes (clustered point gaps or ~12-player buckets, ~6–8 tiers per position). Tier accuracy — placing players in their true tier — is the decision metric vs ADP; matched-population Spearman stays the development metric (`docs/adr/0011-tier-accuracy-decision-metric.md`).
+_Avoid_: rank buckets
+
+**Replacement Baseline**:
+the last-starter player at a position in 12-team PPR (QB12/RB24/WR36/TE12), computed from actual season finishes. Subtracting its points gives VOR (value over replacement), the pooled Answer Key's unit.
+_Avoid_: waiver-level (informal)
+
+**ADP Blend**:
+a deferred later layer that uses ADP as a model input and learns where to nudge the crowd's ranking. Not cheating (no leakage; blend-over-ADP improvement is purely model-added information) but excluded from v2, which is standalone-only (`docs/adr/0013-standalone-model-first-adp-blend-deferred.md`).
+_Avoid_: ensemble (too generic)
 
 **ADP Benchmark**:
 The evaluation comparison against historical Average Draft Position (sourced from the Fantasy Football Calculator API), used as a proxy for crowd/expert consensus since historical *point* projections from major platforms aren't reliably available for free. See `docs/research/historical-adp-and-projections-availability.md`.
