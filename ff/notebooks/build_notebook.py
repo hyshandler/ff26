@@ -49,10 +49,14 @@ md(
     """\
 ## Final Projections
 
-All four positions' full Projections (train through 2023, target season 2024), combined into one
-dataframe — the CSV deliverable itself. `full_projection_p50` is the season-total point estimate
-(`fantasy_points_p50 * games_played_estimate`); `full_projection_p10`/`full_projection_p90` are its
-boom/bust range."""
+All four positions' full Projections (train through 2024, target season **2025** — the first
+genuinely future season: nflverse's weekly data confirms 2024 is fully available but 2025 is not
+yet published, so 2024 is the most recent valid holdout and 2025 is the earliest un-played target),
+combined into one dataframe — the CSV deliverable itself. Each position uses its own winning
+multi-season memory window (QB: last 3 seasons; RB/WR/TE: recency-weighted decay) alongside the
+original single-season features, per `docs/research/multi-season-memory-features.md`.
+`full_projection_p50` is the season-total point estimate (`fantasy_points_p50 *
+games_played_estimate`); `full_projection_p10`/`full_projection_p90` are its boom/bust range."""
 )
 
 code(
@@ -114,8 +118,8 @@ md(
     """\
 ## Walk-Forward Backtest Report
 
-Per position, the Walk-Forward Backtest (seasons 2018-2023, expanding window, 3 splits predicting
-2021/2022/2023) compares:
+Per position, the Walk-Forward Backtest (seasons 2018-2024, expanding window, 4 splits predicting
+2021/2022/2023/2024 — 2024 added once its full-season data became available) compares:
 
 - **Model MAE** vs. **naive-baseline MAE** — mean absolute error of `full_projection_p50` (and the
   naive trailing-average baseline scored + combined with the same Games-Played Estimate) against
@@ -155,6 +159,22 @@ md(
   for 1/4. This is useful, credible signal for a v1 model, not a finished product — a natural
   candidate area for v1.1/v2 iteration (feature work, per-position tuning) rather than a reason to
   ship something that claims to already beat every naive comparator."""
+)
+
+md(
+    """\
+## Multi-Season Memory Features
+
+Feature-importance inspection of the original v1 model found the single-season `trailing_avg_*`
+features dominated every position's model (18-27% importance on the top feature alone), yet that
+feature only sees a Veteran's *most recent completed season* — narrower than the naive baseline it
+was losing to, which averages over the player's entire career. Three multi-season variants (career
+average, last-3-seasons, recency-weighted decay) were backtested alongside the original feature set;
+every position improved on **both** MAE and Spearman ρ with its best variant — QB with a 3-season
+window, RB/WR/TE with recency-weighted decay — so all four adopted their winning variant as the new
+default. Full methodology, numbers, and the decision rationale are in
+`docs/research/multi-season-memory-features.md`; the Walk-Forward Backtest numbers above already
+reflect these new defaults."""
 )
 
 md(

@@ -21,20 +21,35 @@ def _average_stat_columns(config: PositionConfig) -> dict[str, str]:
     }
 
 
+def multi_season_stat_columns(config: PositionConfig) -> dict[str, str]:
+    """feature_name -> raw_stat_column for the multi-season memory features, named
+    distinctly from `_average_stat_columns`'s single-season `trailing_avg_*` so both
+    can coexist and be ablated independently in a backtest."""
+    return {f"multi_season_avg_{stat}": stat for stat in config.raw_stat_columns}
+
+
 def feature_columns(
-    config: PositionConfig, include_depth_chart_competition: bool = True
+    config: PositionConfig,
+    include_depth_chart_competition: bool = True,
+    include_multi_season: bool = False,
 ) -> list[str]:
     """Process/opportunity features first (primary split candidates for LightGBM),
     then trailing raw-stat averages as secondary, lower-priority features.
 
     `include_depth_chart_competition=False` produces the without-feature baseline
     used to backtest the Depth-Chart Competition Feature's effect (ADR-0004).
+    `include_multi_season=True` adds the multi-season memory features (whichever
+    window `multi_season_history` was built with) for the same kind of ablation.
     """
     depth_chart_column = ["depth_chart_competition"] if include_depth_chart_competition else []
+    multi_season_columns = (
+        list(multi_season_stat_columns(config).keys()) if include_multi_season else []
+    )
     return (
         list(config.share_stat_columns)
         + ["trailing_snap_pct"]
         + depth_chart_column
+        + multi_season_columns
         + [f"trailing_avg_{stat}" for stat in config.raw_stat_columns]
     )
 
@@ -43,6 +58,10 @@ def _with_depth_chart_competition(weekly: pd.DataFrame, depth_chart_history: pd.
     weekly = weekly.merge(depth_chart_history, on=["season", "player_id"], how="left")
     weekly["depth_chart_competition"] = weekly["depth_chart_competition"].fillna(0).astype(int)
     return weekly
+
+
+def _with_multi_season_history(weekly: pd.DataFrame, multi_season_history: pd.DataFrame) -> pd.DataFrame:
+    return weekly.merge(multi_season_history, on=["season", "player_id"], how="left")
 
 
 def _with_red_zone_carries(
@@ -63,6 +82,7 @@ def add_position_features(
     red_zone_carries: pd.DataFrame,
     snap_pct: pd.DataFrame,
     depth_chart_history: pd.DataFrame,
+    multi_season_history: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """Player-weeks for `config.position`, with leakage-safe trailing features.
 
@@ -76,6 +96,8 @@ def add_position_features(
     weekly = weekly.merge(snap_pct, on=["season", "week", "player_id"], how="left")
     weekly = add_trailing_player_averages(weekly, _average_stat_columns(config))
     weekly = _with_depth_chart_competition(weekly, depth_chart_history)
+    if multi_season_history is not None:
+        weekly = _with_multi_season_history(weekly, multi_season_history)
 
     return weekly.loc[weekly["position"] == config.position]
 
@@ -89,6 +111,7 @@ def _prediction_features(
     season: int,
     target_season: int,
     player_ids: set[str],
+    multi_season_history: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """Features a Veteran carries into `target_season`, from `season`'s completed totals."""
     weekly = _with_red_zone_carries(config, weekly_all_positions, red_zone_carries)
@@ -107,6 +130,14 @@ def _prediction_features(
     features = features.merge(target_flags, on="player_id", how="left")
     features["depth_chart_competition"] = features["depth_chart_competition"].fillna(0).astype(int)
 
+    # Like the depth-chart flag, the multi-season history is keyed by the season the
+    # feature applies TO (`target_season`), already computed from strictly-prior seasons.
+    if multi_season_history is not None:
+        target_multi_season = multi_season_history.loc[
+            multi_season_history["season"] == target_season
+        ].drop(columns="season")
+        features = features.merge(target_multi_season, on="player_id", how="left")
+
     return features.loc[features["player_id"].isin(player_ids)]
 
 
@@ -121,6 +152,7 @@ def build_position_model_projections(
     eligible_player_ids: set[str],
     model_backend: ModelBackend = "lightgbm",
     include_depth_chart_competition: bool = True,
+    multi_season_history: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """Train a quantile model per raw stat, and project each eligible Veteran.
 
@@ -128,9 +160,18 @@ def build_position_model_projections(
     apples-to-apples comparison); both produce the same p10/p50/p90 output shape.
     `include_depth_chart_competition=False` produces the without-feature baseline
     used to backtest the Depth-Chart Competition Feature's effect (ADR-0004).
+    `multi_season_history` (from one of `features.multi_season_*_averages`) opts
+    into the multi-season memory features for the same kind of ablation; omitted
+    (None) keeps the single-season `trailing_avg_*` behavior unchanged.
     """
+    include_multi_season = multi_season_history is not None
     training = add_position_features(
-        config, weekly_all_positions, red_zone_carries, snap_pct, depth_chart_history
+        config,
+        weekly_all_positions,
+        red_zone_carries,
+        snap_pct,
+        depth_chart_history,
+        multi_season_history=multi_season_history,
     )
     training = training.loc[training["season"] <= train_through_season]
 
@@ -143,6 +184,7 @@ def build_position_model_projections(
         season=train_through_season,
         target_season=target_season,
         player_ids=eligible_player_ids,
+        multi_season_history=multi_season_history,
     )
 
     output = prediction_features[["player_id"]].copy()
@@ -154,7 +196,7 @@ def build_position_model_projections(
     )
     output["games"] = output["player_id"].map(games)
 
-    columns = feature_columns(config, include_depth_chart_competition)
+    columns = feature_columns(config, include_depth_chart_competition, include_multi_season)
     X_train = training[columns]
     X_predict = prediction_features[columns]
     for stat in config.raw_stat_columns:

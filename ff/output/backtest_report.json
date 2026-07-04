@@ -1,34 +1,38 @@
 {
   "QB": {
-    "n": 148,
+    "n": 201,
     "n_with_adp": 20,
-    "model_mae": 93.8922349446254,
-    "naive_mae": 91.96438815278017,
-    "model_spearman_vs_actual": 0.5046598463980887,
-    "adp_spearman_vs_actual": 0.4766917293233082
+    "multi_season_window": "last_n",
+    "model_mae": 92.19677230811696,
+    "naive_mae": 91.7792683399407,
+    "model_spearman_vs_actual": 0.514123439164433,
+    "adp_spearman_vs_actual": 0.5142857142857143
   },
   "RB": {
-    "n": 259,
-    "n_with_adp": 41,
-    "model_mae": 60.51266904454159,
-    "naive_mae": 57.23033079386849,
-    "model_spearman_vs_actual": 0.6102635646913286,
-    "adp_spearman_vs_actual": 0.3578397212543554
+    "n": 343,
+    "n_with_adp": 45,
+    "multi_season_window": "recency_weighted",
+    "model_mae": 61.51884072646656,
+    "naive_mae": 59.29981755898242,
+    "model_spearman_vs_actual": 0.6551022712189738,
+    "adp_spearman_vs_actual": 0.5520603448431174
   },
   "WR": {
-    "n": 424,
-    "n_with_adp": 54,
-    "model_mae": 58.46638242696553,
-    "naive_mae": 59.536448529903765,
-    "model_spearman_vs_actual": 0.6482330362485703,
-    "adp_spearman_vs_actual": 0.7156987937033334
+    "n": 565,
+    "n_with_adp": 55,
+    "multi_season_window": "recency_weighted",
+    "model_mae": 56.89737902238139,
+    "naive_mae": 59.433225018111976,
+    "model_spearman_vs_actual": 0.6624561620118223,
+    "adp_spearman_vs_actual": 0.4824214875327142
   },
   "TE": {
-    "n": 201,
-    "n_with_adp": 15,
-    "model_mae": 44.326910170032335,
-    "naive_mae": 39.49706152342094,
-    "model_spearman_vs_actual": 0.6628488452099375,
-    "adp_spearman_vs_actual": 0.48571428571428565
+    "n": 271,
+    "n_with_adp": 17,
+    "multi_season_window": "recency_weighted",
+    "model_mae": 44.76188562951381,
+    "naive_mae": 40.776943988452445,
+    "model_spearman_vs_actual": 0.6503554022975797,
+    "adp_spearman_vs_actual": 0.6764705882352942
   }
 }

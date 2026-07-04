@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from ff_model.data_availability import assert_no_participation_sourced_features
+from ff_model.features import MultiSeasonWindow
 
 
 @dataclass(frozen=True)
@@ -16,6 +17,17 @@ class PositionConfig:
     raw-participation names) wherever the underlying signal is participation-sourced,
     since these are the leakage-safe, already-lagged versions of those signals.
     """
+
+    multi_season_window: MultiSeasonWindow = "none"
+    """This position's winning multi-season memory window, per the backtest documented
+    in `docs/research/multi-season-memory-features.md` -- "none" until a variant has
+    been shown to clearly beat the single-season baseline for this position."""
+
+    multi_season_n_seasons: int = 3
+    """Window size for `multi_season_window="last_n"`; unused otherwise."""
+
+    multi_season_decay: float = 0.5
+    """Decay rate for `multi_season_window="recency_weighted"`; unused otherwise."""
 
     @property
     def needs_red_zone_data(self) -> bool:
@@ -39,6 +51,7 @@ RB = PositionConfig(
         "receiving_tds",
     ],
     share_stat_columns={"carry_share": "carries", "trailing_red_zone_share": "red_zone_carries"},
+    multi_season_window="recency_weighted",
 )
 
 QB = PositionConfig(
@@ -57,6 +70,7 @@ QB = PositionConfig(
     # workload relative to the team's total rush attempts is the closest opportunity
     # signal in the same shape as RB's carry_share.
     share_stat_columns={"rush_attempt_share": "carries"},
+    multi_season_window="last_n",
 )
 
 # WR and TE share an identical feature set today (both are pure pass-catchers in
@@ -73,12 +87,14 @@ WR = PositionConfig(
     position="WR",
     raw_stat_columns=_RECEIVER_RAW_STAT_COLUMNS,
     share_stat_columns=_RECEIVER_SHARE_STAT_COLUMNS,
+    multi_season_window="recency_weighted",
 )
 
 TE = PositionConfig(
     position="TE",
     raw_stat_columns=_RECEIVER_RAW_STAT_COLUMNS,
     share_stat_columns=_RECEIVER_SHARE_STAT_COLUMNS,
+    multi_season_window="recency_weighted",
 )
 
 POSITION_CONFIGS = {config.position: config for config in (RB, QB, WR, TE)}

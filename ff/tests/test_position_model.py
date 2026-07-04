@@ -140,6 +140,38 @@ def test_position_share_feature_uses_all_positions_for_team_totals(position: str
     assert week2[feature_name] == 10 / 12
 
 
+def test_feature_columns_can_include_multi_season_averages() -> None:
+    config = POSITION_CONFIGS["RB"]
+
+    assert "multi_season_avg_carries" not in feature_columns(config)
+    assert "multi_season_avg_carries" in feature_columns(config, include_multi_season=True)
+
+
+@pytest.mark.parametrize("position", list(POSITION_CONFIGS))
+def test_add_position_features_merges_the_multi_season_history(position: str) -> None:
+    config = POSITION_CONFIGS[position]
+    stat = config.raw_stat_columns[0]
+    weekly = _weekly(
+        position,
+        config,
+        [{"season": 2022, "week": 1, "player_id": "p1", "position": position}],
+    )
+    multi_season_history = pd.DataFrame(
+        [{"season": 2022, "player_id": "p1", f"multi_season_avg_{stat}": 12.5}]
+    )
+
+    result = add_position_features(
+        config,
+        weekly,
+        EMPTY_RED_ZONE,
+        EMPTY_SNAP_PCT,
+        EMPTY_DEPTH_CHART,
+        multi_season_history=multi_season_history,
+    )
+
+    assert result.set_index("player_id").loc["p1", f"multi_season_avg_{stat}"] == 12.5
+
+
 @pytest.mark.network
 def test_build_position_model_projections_supports_tabfm_backend() -> None:
     config = POSITION_CONFIGS["RB"]

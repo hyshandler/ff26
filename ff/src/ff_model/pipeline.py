@@ -3,6 +3,12 @@ from dataclasses import dataclass
 import pandas as pd
 
 from ff_model.depth_chart import depth_chart_competition_history
+from ff_model.features import (
+    MultiSeasonWindow,
+    multi_season_career_averages,
+    multi_season_last_n_averages,
+    multi_season_recency_weighted_averages,
+)
 from ff_model.games_played import estimate_games_played
 from ff_model.nflverse import (
     load_draft_picks,
@@ -14,7 +20,7 @@ from ff_model.nflverse import (
     pfr_id_crosswalk,
 )
 from ff_model.position_config import POSITION_CONFIGS
-from ff_model.position_model import build_position_model_projections
+from ff_model.position_model import build_position_model_projections, multi_season_stat_columns
 from ff_model.scoring import PPR, QUANTILE_SUFFIXES, score_projections
 from ff_model.veterans import veteran_player_ids
 
@@ -47,8 +53,20 @@ def build_position_projections(
     train_through_season: int,
     target_season: int,
     include_depth_chart_competition: bool = True,
+    multi_season_window: MultiSeasonWindow | None = None,
+    multi_season_n_seasons: int | None = None,
+    multi_season_decay: float | None = None,
 ) -> PositionProjections:
-    """Ingest -> filter -> predict -> output, for one position and one Walk-Forward split."""
+    """Ingest -> filter -> predict -> output, for one position and one Walk-Forward split.
+
+    `multi_season_window` opts into a multi-season memory feature alongside the default
+    single-season `trailing_avg_*` features: "career" (full career to date, games-weighted),
+    "last_n" (most recent `multi_season_n_seasons` prior seasons), or "recency_weighted"
+    (exponential decay across prior seasons, rate `multi_season_decay`). Left as None (default),
+    each argument falls back to `PositionConfig`'s per-position winner from the multi-season
+    memory backtest (see `docs/research/multi-season-memory-features.md`) -- pass "none"
+    explicitly to reproduce the original single-season-only baseline.
+    """
     if target_season != train_through_season + 1:
         raise ValueError(
             "target_season must be train_through_season + 1 for the Walk-Forward Backtest"
@@ -56,6 +74,12 @@ def build_position_projections(
     if position not in POSITION_CONFIGS:
         raise ValueError(f"Unknown position: {position!r}")
     config = POSITION_CONFIGS[position]
+    if multi_season_window is None:
+        multi_season_window = config.multi_season_window
+    if multi_season_n_seasons is None:
+        multi_season_n_seasons = config.multi_season_n_seasons
+    if multi_season_decay is None:
+        multi_season_decay = config.multi_season_decay
 
     weekly_seasons = list(range(EARLIEST_SEASON, train_through_season + 1))
     weekly_all_positions = load_weekly_stats(weekly_seasons)
@@ -81,6 +105,23 @@ def build_position_projections(
         rosters, draft_picks, weekly_seasons + [target_season]
     )
 
+    multi_season_history = None
+    if multi_season_window != "none":
+        stat_columns = multi_season_stat_columns(config)
+        all_seasons = weekly_seasons + [target_season]
+        if multi_season_window == "career":
+            multi_season_history = multi_season_career_averages(
+                weekly, stat_columns, all_seasons
+            )
+        elif multi_season_window == "last_n":
+            multi_season_history = multi_season_last_n_averages(
+                weekly, stat_columns, all_seasons, n_seasons=multi_season_n_seasons
+            )
+        else:
+            multi_season_history = multi_season_recency_weighted_averages(
+                weekly, stat_columns, all_seasons, decay=multi_season_decay
+            )
+
     predictions = build_position_model_projections(
         config,
         weekly_all_positions,
@@ -91,6 +132,7 @@ def build_position_projections(
         target_season=target_season,
         eligible_player_ids=eligible,
         include_depth_chart_competition=include_depth_chart_competition,
+        multi_season_history=multi_season_history,
     )
 
     injury_reports = load_injury_reports(weekly_seasons)
