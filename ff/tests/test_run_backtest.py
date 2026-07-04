@@ -12,12 +12,12 @@ from ff_model.run_backtest import (
 )
 
 
-def test_standard_backtest_seasons_produces_ten_splits_starting_at_the_snap_count_floor() -> None:
+def test_standard_backtest_seasons_produces_eleven_splits_starting_at_the_snap_count_floor() -> None:
     splits = walk_forward_splits(STANDARD_BACKTEST_SEASONS, min_train_seasons=3)
 
     assert splits[0] == (2014, 2015)
-    assert splits[-1] == (2023, 2024)
-    assert len(splits) == 10
+    assert splits[-1] == (2024, 2025)
+    assert len(splits) == 11
 
 
 def test_joins_actual_games_played_and_actual_fantasy_points_for_the_target_season() -> None:

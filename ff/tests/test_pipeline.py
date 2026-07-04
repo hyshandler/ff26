@@ -70,6 +70,24 @@ def test_build_position_projections_for_wr_against_real_historical_seasons() -> 
         assert (projections[f"{stat}_p50"] <= projections[f"{stat}_p90"]).all()
 
 
+@pytest.mark.network
+@pytest.mark.parametrize("position", ["QB", "RB", "WR", "TE"])
+def test_build_position_projections_produces_2025_predictions_for_every_position(
+    position: str,
+) -> None:
+    """Issue #12 acceptance criterion: once the standard backtest season list includes
+    target season 2025, the pipeline must actually produce non-empty 2025 predictions
+    for all four positions, not just for older seasons the `stats_player` migration
+    didn't need to reach."""
+    result = build_position_projections(position, train_through_season=2024, target_season=2025)
+
+    assert result.target_season == 2025
+    projections = result.projections
+    assert len(projections) > 0
+    for stat in POSITION_CONFIGS[position].raw_stat_columns:
+        assert f"{stat}_p50" in projections.columns
+
+
 def test_build_position_projections_rejects_a_non_adjacent_target_season() -> None:
     with pytest.raises(ValueError):
         build_position_projections("RB", train_through_season=2022, target_season=2024)

@@ -8,16 +8,16 @@ from ff_model.pipeline import build_position_projections
 from ff_model.scoring import PPR, ScoringFormula
 from ff_model.strength_of_schedule import SosFeature
 
-STANDARD_BACKTEST_SEASONS = list(range(SNAP_COUNTS_EARLIEST_SEASON, 2025))
+STANDARD_BACKTEST_SEASONS = list(range(SNAP_COUNTS_EARLIEST_SEASON, 2026))
 """Default season range for the Walk-Forward Backtest.
 
 Starts at `SNAP_COUNTS_EARLIEST_SEASON` (2012) -- nflverse's Pro-Football-Reference-sourced
 snap counts are the last of the model's feature sources to become available (draft picks and
 play-by-play go back much further, injury reports to 2009), so this is the earliest split
 where every split's training years have a fully-featured `trailing_snap_pct`, not a silently
-missing one. Ends at 2024, the most recent season nflverse's weekly data covers as of this
-writing -- 2025 isn't published yet (`import_weekly_data([2025])` 404s); bump this once a
-newer season is confirmed available.
+missing one. Ends at 2025, the most recent completed season -- covered by nflverse's
+`stats_player` release (see `ff_model.nflverse`); bump this once a newer season is confirmed
+available.
 """
 
 

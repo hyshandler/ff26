@@ -12,10 +12,24 @@ regardless of era: 2021+ seasons have an 18th REG week in nflverse's raw data
 (added for scheduling reasons when the NFL expanded to 17 games), but fantasy
 leagues didn't adopt it as a scored week."""
 
+_STATS_PLAYER_WEEKLY_URL = (
+    "https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_{0}.parquet"
+)
+"""nflverse's current per-player-week release. Supersedes `nfl_data_py.import_weekly_data`'s
+hardcoded `player_stats` release, which is frozen at the 2024 season and 404s for 2025+."""
+
+_WEEKLY_STATS_COLUMN_RENAMES = {
+    "team": "recent_team",
+    "passing_interceptions": "interceptions",
+}
+"""`stats_player` renamed these relative to the retired `player_stats` release; renamed back
+here so every downstream feature/config module keeps using the names it already knows."""
+
 
 @lru_cache(maxsize=None)
 def _weekly_stats_for_season(season: int) -> pd.DataFrame:
-    df: pd.DataFrame = nfl.import_weekly_data([season], downcast=True)
+    df = pd.read_parquet(_STATS_PLAYER_WEEKLY_URL.format(season))
+    df = df.rename(columns=_WEEKLY_STATS_COLUMN_RENAMES)
     return df.loc[(df["season_type"] == "REG") & (df["week"] <= FANTASY_REGULAR_SEASON_MAX_WEEK)]
 
 
