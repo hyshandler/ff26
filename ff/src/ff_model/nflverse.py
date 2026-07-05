@@ -1,9 +1,31 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Callable
 
 import appdirs
 import nfl_data_py as nfl
 import pandas as pd
+
+
+_DISK_CACHE_DIR = Path(__file__).resolve().parents[2] / "assets" / "nflverse_cache"
+"""Root for this module's own on-disk parquet cache -- distinct from `nfl_data_py`'s
+own cache dir (used by `_ensure_pbp_cached`), since every loader here besides play-by-play
+fetches straight from the network on every call otherwise. Lives under the repo's `assets/`
+dir (not a user-level cache dir) so the download only ever has to happen once per checkout,
+not once per machine."""
+
+
+def _disk_cached(relative_path: str, fetch: Callable[[], pd.DataFrame]) -> pd.DataFrame:
+    """Fetch-once-then-reuse-forever cache: nflverse's release files for a given season
+    are immutable once published, so a local parquet copy never goes stale and lets every
+    loader below survive across process restarts, not just within one Walk-Forward run."""
+    path = _DISK_CACHE_DIR / relative_path
+    if path.exists():
+        return pd.read_parquet(path)
+    df = fetch()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_parquet(path)
+    return df
 
 
 FANTASY_REGULAR_SEASON_MAX_WEEK = 17
@@ -26,11 +48,15 @@ _WEEKLY_STATS_COLUMN_RENAMES = {
 here so every downstream feature/config module keeps using the names it already knows."""
 
 
-@lru_cache(maxsize=None)
-def _weekly_stats_for_season(season: int) -> pd.DataFrame:
+def _fetch_weekly_stats_for_season(season: int) -> pd.DataFrame:
     df = pd.read_parquet(_STATS_PLAYER_WEEKLY_URL.format(season))
     df = df.rename(columns=_WEEKLY_STATS_COLUMN_RENAMES)
     return df.loc[(df["season_type"] == "REG") & (df["week"] <= FANTASY_REGULAR_SEASON_MAX_WEEK)]
+
+
+@lru_cache(maxsize=None)
+def _weekly_stats_for_season(season: int) -> pd.DataFrame:
+    return _disk_cached(f"weekly_stats/{season}.parquet", lambda: _fetch_weekly_stats_for_season(season))
 
 
 def load_weekly_stats(seasons: list[int]) -> pd.DataFrame:
@@ -53,7 +79,7 @@ def _all_schedules() -> pd.DataFrame:
     """nflverse's schedule source is one fixed file covering every season (unlike the
     per-season files above), so this is cached once, unfiltered, rather than re-fetched
     per call and filtered locally by `load_schedules`."""
-    return nfl.import_schedules(range(1999, 2030))
+    return _disk_cached("schedules.parquet", lambda: nfl.import_schedules(range(1999, 2030)))
 
 
 def load_schedules(seasons: list[int]) -> pd.DataFrame:
@@ -79,7 +105,9 @@ def load_schedules(seasons: list[int]) -> pd.DataFrame:
 
 @lru_cache(maxsize=None)
 def _seasonal_roster_for_season(season: int) -> pd.DataFrame:
-    return nfl.import_seasonal_rosters([season])
+    return _disk_cached(
+        f"seasonal_rosters/{season}.parquet", lambda: nfl.import_seasonal_rosters([season])
+    )
 
 
 def load_seasonal_rosters(seasons: list[int]) -> pd.DataFrame:
@@ -100,20 +128,26 @@ def pfr_id_crosswalk(rosters: pd.DataFrame) -> pd.Series:
     )
 
 
+_PBP_CACHE_DIR = _DISK_CACHE_DIR / "pbp"
+
+
 def _ensure_pbp_cached(seasons: list[int]) -> None:
     """Play-by-play is nfl_data_py's heaviest download by far, and `import_pbp_data`
     re-fetches it from GitHub every call unless told to use its local disk cache --
-    this populates that cache once per season instead of on every call."""
-    cache_dir = Path(appdirs.user_cache_dir("nfl_data_py", "cooper_dff")) / "pbp"
-    missing = [s for s in seasons if not (cache_dir / f"season={s}").is_dir()]
+    this populates that cache once per season instead of on every call. Uses `alt_path`
+    to keep this cache under the repo's `assets/` dir alongside every other loader here,
+    rather than `nfl_data_py`'s own OS-level cache dir."""
+    missing = [s for s in seasons if not (_PBP_CACHE_DIR / f"season={s}").is_dir()]
     if missing:
-        nfl.cache_pbp(missing)
+        nfl.cache_pbp(missing, alt_path=str(_PBP_CACHE_DIR))
 
 
 def load_red_zone_rush_attempts(seasons: list[int]) -> pd.DataFrame:
     """Per player-week red-zone (inside the 20) rush attempts, from nflverse play-by-play."""
     _ensure_pbp_cached(seasons)
-    pbp: pd.DataFrame = nfl.import_pbp_data(seasons, downcast=True, cache=True)
+    pbp: pd.DataFrame = nfl.import_pbp_data(
+        seasons, downcast=True, cache=True, alt_path=str(_PBP_CACHE_DIR)
+    )
     red_zone_rushes = pbp.loc[
         (pbp["rush_attempt"] == 1) & (pbp["yardline_100"] <= 20) & pbp["rusher_player_id"].notna()
     ]
@@ -130,13 +164,19 @@ INJURY_REPORTS_EARLIEST_SEASON = 2009
 """nflverse's injury report data doesn't go back further than this."""
 
 
-@lru_cache(maxsize=None)
-def _injury_reports_for_season(season: int) -> pd.DataFrame:
+def _fetch_injury_reports_for_season(season: int) -> pd.DataFrame:
     df: pd.DataFrame = nfl.import_injuries([season])
     regular_season = df.loc[df["game_type"] == "REG"]
     return regular_season.rename(columns={"gsis_id": "player_id"})[
         ["player_id", "season", "week", "report_status"]
     ]
+
+
+@lru_cache(maxsize=None)
+def _injury_reports_for_season(season: int) -> pd.DataFrame:
+    return _disk_cached(
+        f"injury_reports/{season}.parquet", lambda: _fetch_injury_reports_for_season(season)
+    )
 
 
 def load_injury_reports(seasons: list[int]) -> pd.DataFrame:
@@ -160,7 +200,7 @@ def _all_draft_picks() -> pd.DataFrame:
     """nflverse's draft-picks source is one fixed file covering every season (unlike the
     per-season files above), so this is cached once, unfiltered, rather than re-fetched
     per call and filtered locally by `load_draft_picks`."""
-    return nfl.import_draft_picks()
+    return _disk_cached("draft_picks.parquet", nfl.import_draft_picks)
 
 
 def load_draft_picks(seasons: list[int]) -> pd.DataFrame:
@@ -181,7 +221,7 @@ SNAP_COUNTS_EARLIEST_SEASON = 2012
 
 @lru_cache(maxsize=None)
 def _snap_counts_for_season(season: int) -> pd.DataFrame:
-    return nfl.import_snap_counts([season])
+    return _disk_cached(f"snap_counts/{season}.parquet", lambda: nfl.import_snap_counts([season]))
 
 
 def load_offense_snap_pct(seasons: list[int], pfr_id_by_player_id: pd.Series) -> pd.DataFrame:
