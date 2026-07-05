@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "appdirs>=1.4.4",
+    "fastapi>=0.139.0",
     "ipykernel>=7.3.0",
     "lightgbm>=4.6.0",
     "matplotlib>=3.11.0",
@@ -19,6 +20,7 @@ dependencies = [
     "requests>=2.34.2",
     "scikit-learn>=1.9.0",
     "tabpfn>=8.0.8",
+    "uvicorn[standard]>=0.50.0",
 ]
 
 [build-system]

@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ff26 Player Report</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+  }
+  h1 { font-size: 1.4rem; }
+  #search-wrap { position: relative; }
+  input[type="text"] {
+    width: 100%;
+    font-size: 1rem;
+    padding: 0.5rem;
+    box-sizing: border-box;
+  }
+  #suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: Canvas;
+    border: 1px solid GrayText;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 10;
+  }
+  #suggestions div { padding: 0.4rem 0.6rem; cursor: pointer; }
+  #suggestions div:hover { background: Highlight; color: HighlightText; }
+  #status { color: GrayText; margin-top: 0.5rem; }
+  #summary { margin-top: 1rem; }
+  canvas { margin-top: 1.5rem; }
+  table { border-collapse: collapse; width: 100%; margin-top: 1.5rem; font-size: 0.85rem; }
+  th, td { border: 1px solid GrayText; padding: 0.3rem 0.5rem; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  th { cursor: pointer; user-select: none; white-space: nowrap; }
+  th .sort-indicator { color: GrayText; margin-left: 0.2rem; }
+
+  #tabs { display: flex; gap: 0.5rem; border-bottom: 1px solid GrayText; margin-top: 1rem; }
+  .tab-button {
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    background: none;
+    border: 1px solid GrayText;
+    border-bottom: none;
+    border-radius: 0.3rem 0.3rem 0 0;
+    cursor: pointer;
+  }
+  .tab-button.active { background: Highlight; color: HighlightText; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  #top-controls { display: flex; gap: 1rem; align-items: center; margin-top: 1rem; flex-wrap: wrap; }
+  #top-controls label { display: flex; gap: 0.4rem; align-items: center; }
+</style>
+</head>
+<body>
+<h1>Player Stats: Projections &amp; ADP vs. Actuals</h1>
+<div id="tabs">
+  <button class="tab-button active" data-tab="search">Player Search</button>
+  <button class="tab-button" data-tab="top">Top Players by Year</button>
+</div>
+
+<div id="search-panel" class="tab-panel active">
+  <div id="search-wrap">
+    <input type="text" id="search" placeholder="Search for a player (e.g. Christian McCaffrey)" autocomplete="off">
+    <div id="suggestions"></div>
+  </div>
+  <div id="status"></div>
+  <div id="summary"></div>
+  <canvas id="points-chart" height="120"></canvas>
+  <canvas id="adp-chart" height="120"></canvas>
+  <table id="table"></table>
+</div>
+
+<div id="top-panel" class="tab-panel">
+  <div id="top-controls">
+    <label>Season <select id="season-select"></select></label>
+    <label>Position
+      <select id="position-select">
+        <option value="">All</option>
+        <option value="QB">QB</option>
+        <option value="RB">RB</option>
+        <option value="WR">WR</option>
+        <option value="TE">TE</option>
+      </select>
+    </label>
+    <label>Limit <input type="number" id="limit-input" value="50" min="1" max="500" style="width: 5rem;"></label>
+  </div>
+  <div id="top-status"></div>
+  <table id="top-table"></table>
+</div>
+
+<script>
+const tabButtons = document.querySelectorAll(".tab-button");
+const tabPanels = { search: document.getElementById("search-panel"), top: document.getElementById("top-panel") };
+let seasonsLoaded = false;
+
+tabButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    tabButtons.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    Object.values(tabPanels).forEach(p => p.classList.remove("active"));
+    tabPanels[btn.dataset.tab].classList.add("active");
+    if (btn.dataset.tab === "top" && !seasonsLoaded) {
+      seasonsLoaded = true;
+      loadSeasons();
+    }
+  });
+});
+
+const searchInput = document.getElementById("search");
+const suggestionsEl = document.getElementById("suggestions");
+const statusEl = document.getElementById("status");
+const summaryEl = document.getElementById("summary");
+let pointsChart, adpChart;
+let debounceTimer;
+
+searchInput.addEventListener("input", () => {
+  clearTimeout(debounceTimer);
+  const q = searchInput.value.trim();
+  if (q.length < 2) {
+    suggestionsEl.innerHTML = "";
+    return;
+  }
+  debounceTimer = setTimeout(() => fetchSuggestions(q), 200);
+});
+
+document.addEventListener("click", (e) => {
+  if (!suggestionsEl.contains(e.target) && e.target !== searchInput) {
+    suggestionsEl.innerHTML = "";
+  }
+});
+
+async function fetchSuggestions(q) {
+  const res = await fetch(`/api/players?q=${encodeURIComponent(q)}`);
+  const names = await res.json();
+  suggestionsEl.innerHTML = "";
+  for (const name of names) {
+    const div = document.createElement("div");
+    div.textContent = name;
+    div.onclick = () => {
+      searchInput.value = name;
+      suggestionsEl.innerHTML = "";
+      loadPlayer(name);
+    };
+    suggestionsEl.appendChild(div);
+  }
+}
+
+searchInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    suggestionsEl.innerHTML = "";
+    loadPlayer(searchInput.value.trim());
+  }
+});
+
+async function loadPlayer(name) {
+  if (!name) return;
+  statusEl.textContent = "Loading...";
+  summaryEl.innerHTML = "";
+  const res = await fetch(`/api/players/${encodeURIComponent(name)}`);
+  if (!res.ok) {
+    const err = await res.json();
+    statusEl.textContent = err.detail || "No data found.";
+    clearCharts();
+    return;
+  }
+  const rows = await res.json();
+  statusEl.textContent = "";
+  renderSummary(rows);
+  renderCharts(rows);
+  renderTable(rows);
+}
+
+function renderSummary(rows) {
+  const seasons = rows.length;
+  const pointsErrors = rows.map(r => r.points_error).filter(v => v !== null);
+  const adpErrors = rows.map(r => r.adp_rank_error).filter(v => v !== null);
+  const mae = arr => arr.length ? (arr.reduce((a, b) => a + Math.abs(b), 0) / arr.length).toFixed(2) : null;
+  const pointsMae = mae(pointsErrors);
+  const adpMae = mae(adpErrors);
+  summaryEl.innerHTML = `
+    <p>Seasons covered: <strong>${seasons}</strong><br>
+    Points MAE (projection vs. actual): <strong>${pointsMae ?? "n/a"}</strong><br>
+    ADP-rank MAE (${adpErrors.length} seasons with real ADP): <strong>${adpMae ?? "n/a"}</strong></p>
+  `;
+}
+
+function clearCharts() {
+  if (pointsChart) pointsChart.destroy();
+  if (adpChart) adpChart.destroy();
+}
+
+function renderCharts(rows) {
+  clearCharts();
+  const seasons = rows.map(r => r.target_season);
+
+  pointsChart = new Chart(document.getElementById("points-chart"), {
+    type: "line",
+    data: {
+      labels: seasons,
+      datasets: [
+        { label: "Projected (full_projection_p50)", data: rows.map(r => r.full_projection_p50), borderColor: "#4e79a7", fill: false },
+        { label: "Actual fantasy points", data: rows.map(r => r.actual_fantasy_points), borderColor: "#e15759", fill: false },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: { title: { display: true, text: "Fantasy Points: Projection vs. Actual" } },
+      scales: { x: { title: { display: true, text: "Season" } } },
+    },
+  });
+
+  adpChart = new Chart(document.getElementById("adp-chart"), {
+    type: "line",
+    data: {
+      labels: seasons,
+      datasets: [
+        { label: "Predicted ADP rank", data: rows.map(r => r.predicted_adp_rank), borderColor: "#59a14f", fill: false },
+        { label: "Actual ADP", data: rows.map(r => r.adp), borderColor: "#f28e2b", fill: false },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: { title: { display: true, text: "ADP Rank: Model-Predicted vs. Actual" } },
+      scales: {
+        x: { title: { display: true, text: "Season" } },
+        y: { reverse: true, title: { display: true, text: "Rank (1 = best)" } },
+      },
+    },
+  });
+}
+
+function makeSortableTable(tableId, cols) {
+  const table = document.getElementById(tableId);
+  const fmt = v => v === null || v === undefined ? "" : (typeof v === "number" ? Math.round(v * 100) / 100 : v);
+  let rows = [];
+  let sortCol = null;
+  let sortAsc = true;
+
+  function renderBody() {
+    let sorted = rows;
+    if (sortCol !== null) {
+      sorted = [...rows].sort((a, b) => {
+        const av = a[sortCol], bv = b[sortCol];
+        if (av === null || av === undefined) return 1;
+        if (bv === null || bv === undefined) return -1;
+        if (av < bv) return sortAsc ? -1 : 1;
+        if (av > bv) return sortAsc ? 1 : -1;
+        return 0;
+      });
+    }
+    const thead = "<thead><tr>" + cols.map(c => {
+      const indicator = c === sortCol ? `<span class="sort-indicator">${sortAsc ? "▲" : "▼"}</span>` : "";
+      return `<th data-col="${c}">${c}${indicator}</th>`;
+    }).join("") + "</tr></thead>";
+    const tbody = "<tbody>" + sorted.map(r => "<tr>" + cols.map(c => `<td>${fmt(r[c])}</td>`).join("") + "</tr>").join("") + "</tbody>";
+    table.innerHTML = thead + tbody;
+    table.querySelectorAll("th").forEach(th => {
+      th.addEventListener("click", () => {
+        const col = th.dataset.col;
+        sortAsc = col === sortCol ? !sortAsc : true;
+        sortCol = col;
+        renderBody();
+      });
+    });
+  }
+
+  return {
+    setRows(newRows) {
+      rows = newRows;
+      sortCol = null;
+      sortAsc = true;
+      renderBody();
+    },
+  };
+}
+
+const searchTable = makeSortableTable("table", ["target_season", "position", "fantasy_points_p50", "full_projection_p50", "actual_fantasy_points", "points_error", "predicted_adp_rank", "adp", "adp_rank_error"]);
+const topTable = makeSortableTable("top-table", ["player_name", "position", "full_projection_p50", "actual_fantasy_points", "points_error", "predicted_adp_rank", "adp", "adp_rank_error"]);
+
+function renderTable(rows) {
+  searchTable.setRows(rows);
+}
+
+const seasonSelect = document.getElementById("season-select");
+const positionSelect = document.getElementById("position-select");
+const limitInput = document.getElementById("limit-input");
+const topStatusEl = document.getElementById("top-status");
+
+async function loadSeasons() {
+  const res = await fetch("/api/seasons");
+  const seasons = await res.json();
+  seasonSelect.innerHTML = seasons.map(s => `<option value="${s}">${s}</option>`).join("");
+  if (seasons.length) {
+    seasonSelect.value = seasons[seasons.length - 1];
+    loadTopPlayers();
+  }
+}
+
+seasonSelect.addEventListener("change", loadTopPlayers);
+positionSelect.addEventListener("change", loadTopPlayers);
+limitInput.addEventListener("change", loadTopPlayers);
+
+async function loadTopPlayers() {
+  const season = seasonSelect.value;
+  if (!season) return;
+  topStatusEl.textContent = "Loading...";
+  const params = new URLSearchParams({ limit: limitInput.value || "50" });
+  if (positionSelect.value) params.set("position", positionSelect.value);
+  const res = await fetch(`/api/seasons/${encodeURIComponent(season)}/top?${params}`);
+  if (!res.ok) {
+    const err = await res.json();
+    topStatusEl.textContent = err.detail || "No data found.";
+    document.getElementById("top-table").innerHTML = "";
+    return;
+  }
+  const rows = await res.json();
+  topStatusEl.textContent = "";
+  renderTopTable(rows);
+}
+
+function renderTopTable(rows) {
+  topTable.setRows(rows);
+}
+</script>
+</body>
+</html>
