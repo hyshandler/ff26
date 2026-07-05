@@ -1,10 +1,12 @@
 import pandas as pd
 
+from ff_model.adp import crosswalk_adp_to_player_ids, load_adp
 from ff_model.backtest import walk_forward_splits
+from ff_model.backtest_report import build_position_report
 from ff_model.experience_features import ExperienceFeature
 from ff_model.features import MultiSeasonWindow
-from ff_model.naive_baseline import predict_naive_baseline, score_naive_baseline
-from ff_model.nflverse import SNAP_COUNTS_EARLIEST_SEASON
+from ff_model.naive_baseline import RAW_STAT_COLUMNS, predict_naive_baseline, score_naive_baseline
+from ff_model.nflverse import SNAP_COUNTS_EARLIEST_SEASON, load_seasonal_rosters, load_weekly_stats
 from ff_model.pipeline import build_position_projections
 from ff_model.scoring import PPR, ScoringFormula
 from ff_model.strength_of_schedule import SosFeature
@@ -20,6 +22,13 @@ missing one. Ends at 2025, the most recent completed season -- covered by nflver
 `stats_player` release (see `ff_model.nflverse`); bump this once a newer season is confirmed
 available.
 """
+
+ADP_LATEST_AVAILABLE_SEASON = 2024
+"""Last target season Fantasy Football Calculator has ADP for (per ADR-0007 /
+`docs/research/historical-adp-and-projections-availability.md`). 2025 has no FFC ADP
+at all -- confirmed permanent gap, tracked separately by issue #18's FantasyPros
+scrape fallback -- so `build_backtest_report` never requests ADP past this season and
+those rows simply fall outside the Matched Population rather than erroring."""
 
 
 def run_backtest(
@@ -134,3 +143,40 @@ def with_naive_baseline(
         result.loc[mask, "naive_ppg"] = mapped.to_numpy()
         result.loc[mask, "naive_full_projection"] = mapped.to_numpy() * result.loc[mask, "games_played_estimate"].to_numpy()
     return result
+
+
+def build_backtest_report(
+    position: str,
+    seasons: list[int] = STANDARD_BACKTEST_SEASONS,
+    min_train_seasons: int = 3,
+    raw_stat_columns: list[str] = RAW_STAT_COLUMNS,
+    formula: ScoringFormula = PPR,
+) -> dict:
+    """Runs the Walk-Forward Backtest for `position` end-to-end and scores it per
+    ADR-0010/issue #13: Answer Key actual outcomes, ADP Benchmark, and the naive
+    baseline all joined on, then `build_position_report` leads the result with
+    Matched Population rho (full-population rho demoted to context-only).
+
+    ADP is only requested through `ADP_LATEST_AVAILABLE_SEASON` -- target seasons
+    past it (e.g. 2025) get no ADP call at all and simply fall outside the Matched
+    Population, rather than erroring on a season FFC has no data for.
+    """
+    result = run_backtest(position, seasons, min_train_seasons)
+
+    # `with_naive_baseline` needs weekly rows through each split's `train_through_season`
+    # (always earlier than that split's `target_season`), so load the full requested
+    # `seasons` range rather than just the target seasons `with_actual_outcomes` needs.
+    weekly = load_weekly_stats(sorted(set(seasons)))
+    result = with_actual_outcomes(result, weekly, formula)
+    result = with_naive_baseline(result, weekly, raw_stat_columns, formula)
+
+    adp_target_seasons = sorted(s for s in set(result["target_season"]) if s <= ADP_LATEST_AVAILABLE_SEASON)
+    if adp_target_seasons:
+        rosters = load_seasonal_rosters(adp_target_seasons)
+        for season in adp_target_seasons:
+            adp = crosswalk_adp_to_player_ids(load_adp(season), rosters, season=season)
+            result = with_adp_benchmark(result, adp, season=season)
+    else:
+        result["adp"] = pd.NA
+
+    return build_position_report(result)

@@ -30,3 +30,8 @@ def test_report_leads_with_matched_population_and_labels_full_population_context
     # Naive baseline is still reported alongside, not dropped.
     assert "naive_mae" in report
     assert "model_mae" in report
+    # MAE is scored on the Matched Population too -- p5's wild 999-vs-1 miss (an
+    # undraftable bench player) would otherwise swamp the number the same way
+    # ADR-0010 says it would swamp full-population rho.
+    assert report["model_mae"] == pytest.approx(22.5)
+    assert report["naive_mae"] == pytest.approx(22.5)

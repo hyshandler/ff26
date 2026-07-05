@@ -6,6 +6,7 @@ from ff_model.backtest import walk_forward_splits
 from ff_model.nflverse import load_seasonal_rosters
 from ff_model.run_backtest import (
     STANDARD_BACKTEST_SEASONS,
+    build_backtest_report,
     run_backtest,
     with_actual_outcomes,
     with_adp_benchmark,
@@ -159,3 +160,24 @@ def test_with_adp_benchmark_joins_real_ffc_adp_onto_a_real_backtest_result() -> 
     assert (season_2022["adp"].dropna() > 0).all()
     # The other split's rows are untouched by this season's ADP.
     assert with_adp.loc[with_adp["target_season"] == 2023, "adp"].isna().all()
+
+
+@pytest.mark.network
+def test_build_backtest_report_runs_end_to_end_and_leads_with_matched_population() -> None:
+    report = build_backtest_report("RB", seasons=[2020, 2021, 2022, 2023], min_train_seasons=2)
+
+    assert report["n"] > 0
+    assert report["n_matched"] > 0
+    assert set(report["matched_population"]) == {"model", "adp", "naive"}
+    assert set(report["full_population_context_only"]) == {"model", "adp", "naive"}
+    assert "model_mae" in report
+    assert "naive_mae" in report
+
+
+@pytest.mark.network
+def test_build_backtest_report_excludes_seasons_past_adp_availability() -> None:
+    report = build_backtest_report("RB", seasons=[2023, 2024, 2025], min_train_seasons=1)
+
+    # 2025 has no FFC ADP at all (confirmed permanent gap, issue #18) -- it should
+    # simply fall outside the Matched Population, not error.
+    assert report["n_matched"] < report["n"]
