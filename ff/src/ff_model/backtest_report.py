@@ -6,6 +6,7 @@ from ff_model.evaluation import (
     mean_absolute_error,
     season_block_bootstrap_interval,
 )
+from ff_model.tiers import tier_accuracy_report
 
 
 def build_position_report(df: pd.DataFrame) -> dict:
@@ -72,4 +73,15 @@ def build_position_report(df: pd.DataFrame) -> dict:
             )["win_rate"],
         ),
     }
+
+    # Tier accuracy (ADR-0011) -- supporting signal alongside Disagreement Edge,
+    # also on the Matched Population: how often each ranking places a player in
+    # his true tier, derived per-season from actual outcomes.
+    report["tier_accuracy"] = tier_accuracy_report(
+        matched,
+        actual_col="actual_fantasy_points",
+        model_col="full_projection_p50",
+        adp_col="adp",
+        season_col="target_season",
+    )
     return report

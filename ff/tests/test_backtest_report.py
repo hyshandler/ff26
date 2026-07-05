@@ -79,3 +79,18 @@ def test_report_states_the_disagreement_edge_verdict() -> None:
     # |model_rank - adp_rank| = |21 - 2i| > 12 for i in {1,2,3,4,17,18,19,20} -- 8
     # players/season x 2 seasons.
     assert edge["n_large_disagreements"] == 16
+
+
+def test_report_states_the_tier_accuracy_verdict() -> None:
+    """Per ADR-0011/issue #14: the report must state a tier-accuracy beat/tied/lost
+    verdict per position, as a supporting signal alongside Disagreement Edge, on the
+    same Matched Population."""
+    report = build_position_report(_disagreement_frame())
+
+    tiers = report["tier_accuracy"]
+    # The model's rank matches the actual outcome exactly, so it places every
+    # player in his true tier; ADP's fully-reversed rank does worse.
+    assert tiers["model"]["accuracy"] == pytest.approx(1.0)
+    assert tiers["model"]["off_by_one_rate"] == pytest.approx(0.0)
+    assert tiers["adp"]["accuracy"] < 1.0
+    assert tiers["verdict"] == "beat"
