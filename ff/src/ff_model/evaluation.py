@@ -87,6 +87,43 @@ def bootstrap_confidence_interval(
     return (float(low), float(high))
 
 
+def season_block_bootstrap_interval(
+    df: pd.DataFrame,
+    season_column: str,
+    metric_fn: Callable[[pd.DataFrame], float],
+    n_resamples: int = 1000,
+    confidence: float = 0.95,
+    random_state: int = 0,
+) -> tuple[float, float]:
+    """Percentile bootstrap interval for `metric_fn(df)`, resampling whole `season_column`
+    blocks with replacement rather than individual rows.
+
+    Per ADR-0014: with ~14 backtest seasons, the season -- not the player -- is the real
+    unit of independence (players within a season share season-level shocks), so
+    `bootstrap_confidence_interval`'s row-level resampling would understate uncertainty
+    here. Each resample draws `len(seasons)` seasons with replacement and concatenates
+    every row belonging to each drawn season (a season drawn twice contributes its rows
+    twice).
+
+    `metric_fn` may return `nan` for a resample where the metric is undefined (e.g. a
+    win rate with no qualifying rows in the drawn seasons) -- those resamples are
+    dropped before taking percentiles rather than letting a single `nan` poison the
+    whole interval.
+    """
+    seasons = df[season_column].unique()
+    rng = np.random.default_rng(random_state)
+
+    resampled_values = []
+    for _ in range(n_resamples):
+        drawn_seasons = rng.choice(seasons, size=len(seasons), replace=True)
+        resampled = pd.concat([df.loc[df[season_column] == season] for season in drawn_seasons], ignore_index=True)
+        resampled_values.append(metric_fn(resampled))
+
+    alpha = (1 - confidence) / 2
+    low, high = np.nanquantile(resampled_values, [alpha, 1 - alpha])
+    return (float(low), float(high))
+
+
 def per_split_metrics(
     df: pd.DataFrame, split_column: str, predicted_column: str, actual_column: str, metric_fn: MetricFn
 ) -> pd.Series:

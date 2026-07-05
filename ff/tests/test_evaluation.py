@@ -7,6 +7,7 @@ from ff_model.evaluation import (
     matched_population_report,
     mean_absolute_error,
     per_split_metrics,
+    season_block_bootstrap_interval,
     spearman_rank_correlation,
 )
 
@@ -146,3 +147,33 @@ def test_matched_population_report_computes_each_predictor_on_the_identical_matc
     # Full-population numbers are reported too, but under a clearly separate context-only key.
     assert set(report["full_population_context_only"]) == {"model", "adp", "naive"}
     assert report["full_population_context_only"]["model"] != report["matched_population"]["model"]
+
+
+def test_season_block_bootstrap_interval_resamples_whole_seasons_not_rows() -> None:
+    """Per ADR-0014: ~14 backtest seasons, not individual players, is the real unit of
+    independence, so confidence intervals must resample whole season blocks."""
+    df = pd.DataFrame(
+        {
+            "season": [2020, 2020, 2020, 2021, 2021, 2021],
+            "value": [10.0, 10.0, 10.0, 100.0, 100.0, 100.0],
+        }
+    )
+
+    low, high = season_block_bootstrap_interval(
+        df, "season", metric_fn=lambda block: block["value"].mean(), n_resamples=1000, random_state=0
+    )
+
+    # Every possible resample is built entirely from whole 2020 (all 10s) and/or 2021
+    # (all 100s) blocks, so the mean of any resample can only ever land on 10, 55, or 100
+    # -- never some other value a row-level shuffle could produce.
+    assert 10.0 <= low <= high <= 100.0
+
+
+def test_season_block_bootstrap_interval_is_a_point_for_a_single_season() -> None:
+    df = pd.DataFrame({"season": [2022, 2022, 2022], "value": [5.0, 7.0, 9.0]})
+
+    low, high = season_block_bootstrap_interval(df, "season", metric_fn=lambda block: block["value"].mean())
+
+    # Only one season exists, so every resample is that season repeated -- no variance.
+    assert low == pytest.approx(7.0)
+    assert high == pytest.approx(7.0)
