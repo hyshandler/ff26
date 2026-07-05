@@ -2,6 +2,8 @@ from typing import Literal
 
 import pandas as pd
 
+from ff_model.feature_cache import cache_key, dataframe_fingerprint, disk_cached_frame
+
 MultiSeasonWindow = Literal["none", "career", "last_n", "recency_weighted"]
 
 
@@ -18,33 +20,46 @@ def add_trailing_team_shares(
     before the current week. A player/team's first week of a season has no prior
     weeks to compute a share from, so the feature is NaN there (left for the model
     to handle, not imputed).
+
+    The feature columns themselves are disk-cached (see `feature_cache`), keyed on the
+    season range present in `weekly_all_positions` plus `stat_columns` -- so repeated
+    calls for the same walk-forward split (e.g. across a feature-family sweep that only
+    varies an unrelated knob) merge a cached table instead of recomputing it.
     """
-    df = weekly_all_positions.sort_values(["season", "week"]).reset_index(drop=True)
+    relevant_columns = ["season", "week", "player_id", team_column, *stat_columns.values()]
+    fingerprint = dataframe_fingerprint(weekly_all_positions[relevant_columns])
+    key = cache_key("trailing_team_shares", fingerprint, stat_columns, team_column=team_column)
 
-    for feature_name, stat_column in stat_columns.items():
-        player_prior_cumulative = df.groupby(["season", "player_id"])[stat_column].transform(
-            lambda s: s.cumsum().shift(1)
-        )
+    def compute() -> pd.DataFrame:
+        df = weekly_all_positions.sort_values(["season", "week"]).reset_index(drop=True)
 
-        team_week_totals = (
-            df.groupby(["season", "week", team_column])[stat_column]
-            .sum()
-            .reset_index()
-            .sort_values(["season", team_column, "week"])
-        )
-        team_week_totals["team_prior_cumulative"] = team_week_totals.groupby(
-            ["season", team_column]
-        )[stat_column].transform(lambda s: s.cumsum().shift(1))
+        for feature_name, stat_column in stat_columns.items():
+            player_prior_cumulative = df.groupby(["season", "player_id"])[stat_column].transform(
+                lambda s: s.cumsum().shift(1)
+            )
 
-        df = df.merge(
-            team_week_totals[["season", "week", team_column, "team_prior_cumulative"]],
-            on=["season", "week", team_column],
-            how="left",
-        )
-        df[feature_name] = player_prior_cumulative / df["team_prior_cumulative"]
-        df = df.drop(columns="team_prior_cumulative")
+            team_week_totals = (
+                df.groupby(["season", "week", team_column])[stat_column]
+                .sum()
+                .reset_index()
+                .sort_values(["season", team_column, "week"])
+            )
+            team_week_totals["team_prior_cumulative"] = team_week_totals.groupby(
+                ["season", team_column]
+            )[stat_column].transform(lambda s: s.cumsum().shift(1))
 
-    return df
+            df = df.merge(
+                team_week_totals[["season", "week", team_column, "team_prior_cumulative"]],
+                on=["season", "week", team_column],
+                how="left",
+            )
+            df[feature_name] = player_prior_cumulative / df["team_prior_cumulative"]
+            df = df.drop(columns="team_prior_cumulative")
+
+        return df[["season", "week", "player_id", *stat_columns.keys()]]
+
+    features = disk_cached_frame(key, compute)
+    return weekly_all_positions.merge(features, on=["season", "week", "player_id"], how="left")
 
 
 def season_ending_shares(
@@ -99,53 +114,78 @@ def multi_season_career_averages(
     `target_season`'s row uses only its strictly-prior seasons and never needs `target_season`'s
     own (not-yet-played) weekly data. The earliest season in `seasons` has no prior season, so
     it's absent from the result.
+
+    Disk-cached (see `feature_cache`) keyed on `weekly`'s content, `seasons`, and `stat_columns`.
     """
-    ordered = sorted(seasons)
-    raw_columns = list(stat_columns.values())
-    season_totals = _season_totals(weekly, stat_columns)
+    fingerprint = dataframe_fingerprint(weekly[["season", "player_id", *sorted(set(stat_columns.values()))]])
+    key = cache_key(
+        "multi_season_career_averages", fingerprint, stat_columns, seasons=sorted(seasons)
+    )
 
-    frames = []
-    for season in ordered[1:]:
-        prior = season_totals.loc[season_totals["season"] < season]
-        if prior.empty:
-            continue
-        totals = prior.groupby("player_id")[raw_columns + ["games"]].sum()
-        averages = totals[raw_columns].div(totals["games"], axis=0)
-        averages.columns = list(stat_columns.keys())
-        averages = averages.reset_index()
-        averages.insert(0, "season", season)
-        frames.append(averages)
+    def compute() -> pd.DataFrame:
+        ordered = sorted(seasons)
+        raw_columns = list(stat_columns.values())
+        season_totals = _season_totals(weekly, stat_columns)
 
-    if not frames:
-        return pd.DataFrame(columns=["season", "player_id", *stat_columns.keys()])
-    return pd.concat(frames, ignore_index=True)
+        frames = []
+        for season in ordered[1:]:
+            prior = season_totals.loc[season_totals["season"] < season]
+            if prior.empty:
+                continue
+            totals = prior.groupby("player_id")[raw_columns + ["games"]].sum()
+            averages = totals[raw_columns].div(totals["games"], axis=0)
+            averages.columns = list(stat_columns.keys())
+            averages = averages.reset_index()
+            averages.insert(0, "season", season)
+            frames.append(averages)
+
+        if not frames:
+            return pd.DataFrame(columns=["season", "player_id", *stat_columns.keys()])
+        return pd.concat(frames, ignore_index=True)
+
+    return disk_cached_frame(key, compute)
 
 
 def multi_season_last_n_averages(
     weekly: pd.DataFrame, stat_columns: dict[str, str], seasons: list[int], n_seasons: int = 3
 ) -> pd.DataFrame:
     """Like `multi_season_career_averages`, but averaged over only the most recent `n_seasons`
-    prior seasons (by season number, not game count) instead of full career."""
-    ordered = sorted(seasons)
-    raw_columns = list(stat_columns.values())
-    season_totals = _season_totals(weekly, stat_columns)
+    prior seasons (by season number, not game count) instead of full career.
 
-    frames = []
-    for season in ordered[1:]:
-        window_seasons = [s for s in ordered if s < season][-n_seasons:]
-        window = season_totals.loc[season_totals["season"].isin(window_seasons)]
-        if window.empty:
-            continue
-        totals = window.groupby("player_id")[raw_columns + ["games"]].sum()
-        averages = totals[raw_columns].div(totals["games"], axis=0)
-        averages.columns = list(stat_columns.keys())
-        averages = averages.reset_index()
-        averages.insert(0, "season", season)
-        frames.append(averages)
+    Disk-cached (see `feature_cache`) keyed on `weekly`'s content, `seasons`, `stat_columns`, and `n_seasons`.
+    """
+    fingerprint = dataframe_fingerprint(weekly[["season", "player_id", *sorted(set(stat_columns.values()))]])
+    key = cache_key(
+        "multi_season_last_n_averages",
+        fingerprint,
+        stat_columns,
+        seasons=sorted(seasons),
+        n_seasons=n_seasons,
+    )
 
-    if not frames:
-        return pd.DataFrame(columns=["season", "player_id", *stat_columns.keys()])
-    return pd.concat(frames, ignore_index=True)
+    def compute() -> pd.DataFrame:
+        ordered = sorted(seasons)
+        raw_columns = list(stat_columns.values())
+        season_totals = _season_totals(weekly, stat_columns)
+
+        frames = []
+        for season in ordered[1:]:
+            window_seasons = [s for s in ordered if s < season][-n_seasons:]
+            window = season_totals.loc[season_totals["season"].isin(window_seasons)]
+            if window.empty:
+                continue
+            totals = window.groupby("player_id")[raw_columns + ["games"]].sum()
+            averages = totals[raw_columns].div(totals["games"], axis=0)
+            averages.columns = list(stat_columns.keys())
+            averages = averages.reset_index()
+            averages.insert(0, "season", season)
+            frames.append(averages)
+
+        if not frames:
+            return pd.DataFrame(columns=["season", "player_id", *stat_columns.keys()])
+        return pd.concat(frames, ignore_index=True)
+
+    return disk_cached_frame(key, compute)
 
 
 def multi_season_recency_weighted_averages(
@@ -153,34 +193,48 @@ def multi_season_recency_weighted_averages(
 ) -> pd.DataFrame:
     """Like `multi_season_career_averages`, but each prior season's per-game average is weighted
     by `decay ** (seasons_ago - 1)` before averaging, so more recent seasons count for more.
+
+    Disk-cached (see `feature_cache`) keyed on `weekly`'s content, `seasons`, `stat_columns`, and `decay`.
     """
-    ordered = sorted(seasons)
-    feature_names = list(stat_columns.keys())
-    raw_columns = list(stat_columns.values())
-    season_totals = _season_totals(weekly, stat_columns)
+    fingerprint = dataframe_fingerprint(weekly[["season", "player_id", *sorted(set(stat_columns.values()))]])
+    key = cache_key(
+        "multi_season_recency_weighted_averages",
+        fingerprint,
+        stat_columns,
+        seasons=sorted(seasons),
+        decay=decay,
+    )
 
-    per_season_avg = season_totals[raw_columns].div(season_totals["games"], axis=0)
-    per_season_avg.columns = feature_names
-    per_season_avg["season"] = season_totals["season"]
-    per_season_avg["player_id"] = season_totals["player_id"]
+    def compute() -> pd.DataFrame:
+        ordered = sorted(seasons)
+        feature_names = list(stat_columns.keys())
+        raw_columns = list(stat_columns.values())
+        season_totals = _season_totals(weekly, stat_columns)
 
-    frames = []
-    for season in ordered[1:]:
-        prior = per_season_avg.loc[per_season_avg["season"] < season].copy()
-        if prior.empty:
-            continue
-        prior["weight"] = decay ** (season - prior["season"] - 1)
-        weighted_features = prior[feature_names].mul(prior["weight"], axis=0)
-        weighted_features["player_id"] = prior["player_id"]
-        weighted_features["weight"] = prior["weight"]
-        totals = weighted_features.groupby("player_id").sum()
-        averages = totals[feature_names].div(totals["weight"], axis=0).reset_index()
-        averages.insert(0, "season", season)
-        frames.append(averages)
+        per_season_avg = season_totals[raw_columns].div(season_totals["games"], axis=0)
+        per_season_avg.columns = feature_names
+        per_season_avg["season"] = season_totals["season"]
+        per_season_avg["player_id"] = season_totals["player_id"]
 
-    if not frames:
-        return pd.DataFrame(columns=["season", "player_id", *feature_names])
-    return pd.concat(frames, ignore_index=True)
+        frames = []
+        for season in ordered[1:]:
+            prior = per_season_avg.loc[per_season_avg["season"] < season].copy()
+            if prior.empty:
+                continue
+            prior["weight"] = decay ** (season - prior["season"] - 1)
+            weighted_features = prior[feature_names].mul(prior["weight"], axis=0)
+            weighted_features["player_id"] = prior["player_id"]
+            weighted_features["weight"] = prior["weight"]
+            totals = weighted_features.groupby("player_id").sum()
+            averages = totals[feature_names].div(totals["weight"], axis=0).reset_index()
+            averages.insert(0, "season", season)
+            frames.append(averages)
+
+        if not frames:
+            return pd.DataFrame(columns=["season", "player_id", *feature_names])
+        return pd.concat(frames, ignore_index=True)
+
+    return disk_cached_frame(key, compute)
 
 
 def add_trailing_player_averages(
@@ -192,13 +246,25 @@ def add_trailing_player_averages(
     that player's average `source_column` for the season so far, computed over
     weeks strictly before the current week (NaN in a player's first week of a
     season, same as `add_trailing_team_shares`).
+
+    Disk-cached the same way as `add_trailing_team_shares` -- keyed on the season
+    range present in `weekly` plus `stat_columns`, so this groupby-transform (the
+    dominant cost in a walk-forward backtest) only runs once per split.
     """
-    df = weekly.sort_values(["season", "week"]).reset_index(drop=True)
-    for feature_name, source_column in stat_columns.items():
-        df[feature_name] = df.groupby(["season", "player_id"])[source_column].transform(
-            lambda s: s.shift(1).expanding().mean()
-        )
-    return df
+    relevant_columns = ["season", "week", "player_id", *stat_columns.values()]
+    fingerprint = dataframe_fingerprint(weekly[relevant_columns])
+    key = cache_key("trailing_player_averages", fingerprint, stat_columns)
+
+    def compute() -> pd.DataFrame:
+        df = weekly.sort_values(["season", "week"]).reset_index(drop=True)
+        for feature_name, source_column in stat_columns.items():
+            df[feature_name] = df.groupby(["season", "player_id"])[source_column].transform(
+                lambda s: s.shift(1).expanding().mean()
+            )
+        return df[["season", "week", "player_id", *stat_columns.keys()]]
+
+    features = disk_cached_frame(key, compute)
+    return weekly.merge(features, on=["season", "week", "player_id"], how="left")
 
 
 def season_ending_averages(

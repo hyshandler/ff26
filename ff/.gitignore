@@ -5,3 +5,4 @@ __pycache__/
 .venv/
 *.egg-info/
 assets/nflverse_cache/
+assets/feature_cache/
