@@ -48,8 +48,8 @@ the retrospective-optimal order for a season: players ranked by actual season to
 _Avoid_: ground truth (ambiguous about total-points vs PPG)
 
 **Tier**:
-a band of players with similar actual season value; derived per position from each season's actual outcomes (clustered point gaps or ~12-player buckets, ~6–8 tiers per position). Tier accuracy — placing players in their true tier — is the decision metric vs ADP; matched-population Spearman stays the development metric (`docs/adr/0011-tier-accuracy-decision-metric.md`).
-_Avoid_: rank buckets
+a band of players with similar actual season value; derived per position from each season's actual outcomes by clustering on point gaps (variable-sized, shaped by that season's real scoring distribution), targeting ~6–8 tiers per position — not fixed ~12-player buckets, which would just re-derive ADP's own round structure instead of reading the season's actual shape. Tier accuracy — placing players in their true tier — is the decision metric vs ADP; matched-population Spearman stays the development metric (`docs/adr/0011-tier-accuracy-decision-metric.md`).
+_Avoid_: rank buckets, fixed-size tiers
 
 **Replacement Baseline**:
 the last-starter player at a position in 12-team PPR (QB12/RB24/WR36/TE12), computed from actual season finishes. Subtracting its points gives VOR (value over replacement), the pooled Answer Key's unit.
