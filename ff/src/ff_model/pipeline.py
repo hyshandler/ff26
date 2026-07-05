@@ -28,7 +28,7 @@ from ff_model.nflverse import (
     pfr_id_crosswalk,
 )
 from ff_model.position_config import POSITION_CONFIGS
-from ff_model.position_model import build_position_model_projections, multi_season_stat_columns
+from ff_model.position_model import ModelBackend, build_position_model_projections, multi_season_stat_columns
 from ff_model.scoring import PPR, QUANTILE_SUFFIXES, score_projections
 from ff_model.strength_of_schedule import (
     SosFeature,
@@ -73,6 +73,7 @@ def build_position_projections(
     multi_season_decay: float | None = None,
     experience_feature: ExperienceFeature | None = None,
     sos_feature: SosFeature | None = None,
+    model_backend: ModelBackend = "lightgbm",
 ) -> PositionProjections:
     """Ingest -> filter -> predict -> output, for one position and one Walk-Forward split.
 
@@ -185,6 +186,7 @@ def build_position_projections(
         sos_history=sos_history,
         league_wide_trailing_points_allowed=league_wide_trailing_points_allowed,
         sos_feature=sos_feature,
+        model_backend=model_backend,
     )
 
     injury_reports = load_injury_reports(weekly_seasons)

@@ -12,9 +12,10 @@ from ff_model.features import (
 from ff_model.position_config import PositionConfig
 from ff_model.strength_of_schedule import SOS_FEATURE_COLUMN, SosFeature, add_actual_game_sos
 from ff_model.quantile_model import predict_quantiles, train_quantile_models
+from ff_model.rf_model import predict_rf_quantiles, train_rf_quantile_model
 from ff_model.tabfm_model import predict_tabfm_quantiles, train_tabfm_model
 
-ModelBackend = Literal["lightgbm", "tabfm"]
+ModelBackend = Literal["lightgbm", "tabfm", "random_forest"]
 
 
 def _average_stat_columns(config: PositionConfig, sos_feature: SosFeature = "none") -> dict[str, str]:
@@ -282,6 +283,9 @@ def build_position_model_projections(
         if model_backend == "lightgbm":
             models = train_quantile_models(X_train, training[stat])
             quantiles = predict_quantiles(models, X_predict)
+        elif model_backend == "random_forest":
+            rf_model = train_rf_quantile_model(X_train, training[stat])
+            quantiles = predict_rf_quantiles(rf_model, X_predict)
         else:
             model = train_tabfm_model(X_train, training[stat])
             quantiles = predict_tabfm_quantiles(model, X_predict)

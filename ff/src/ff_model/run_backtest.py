@@ -8,6 +8,7 @@ from ff_model.features import MultiSeasonWindow
 from ff_model.naive_baseline import RAW_STAT_COLUMNS, predict_naive_baseline, score_naive_baseline
 from ff_model.nflverse import SNAP_COUNTS_EARLIEST_SEASON, load_seasonal_rosters, load_weekly_stats
 from ff_model.pipeline import build_position_projections
+from ff_model.position_model import ModelBackend
 from ff_model.scoring import PPR, ScoringFormula
 from ff_model.strength_of_schedule import SosFeature
 
@@ -39,6 +40,7 @@ def run_backtest(
     multi_season_window: MultiSeasonWindow | None = None,
     experience_feature: ExperienceFeature | None = None,
     sos_feature: SosFeature | None = None,
+    model_backend: ModelBackend = "lightgbm",
 ) -> pd.DataFrame:
     """Run the Walk-Forward Backtest for one position and concatenate every split's output."""
     splits = walk_forward_splits(seasons, min_train_seasons)
@@ -53,6 +55,7 @@ def run_backtest(
             multi_season_window=multi_season_window,
             experience_feature=experience_feature,
             sos_feature=sos_feature,
+            model_backend=model_backend,
         )
         frame = result.projections.copy()
         frame.insert(1, "train_through_season", train_through_season)
@@ -151,6 +154,11 @@ def build_backtest_report(
     min_train_seasons: int = 3,
     raw_stat_columns: list[str] = RAW_STAT_COLUMNS,
     formula: ScoringFormula = PPR,
+    include_depth_chart_competition: bool = True,
+    multi_season_window: MultiSeasonWindow | None = None,
+    experience_feature: ExperienceFeature | None = None,
+    sos_feature: SosFeature | None = None,
+    model_backend: ModelBackend = "lightgbm",
 ) -> dict:
     """Runs the Walk-Forward Backtest for `position` end-to-end and scores it per
     ADR-0010/issue #13: Answer Key actual outcomes, ADP Benchmark, and the naive
@@ -160,8 +168,23 @@ def build_backtest_report(
     ADP is only requested through `ADP_LATEST_AVAILABLE_SEASON` -- target seasons
     past it (e.g. 2025) get no ADP call at all and simply fall outside the Matched
     Population, rather than erroring on a season FFC has no data for.
+
+    The feature-family knobs (`include_depth_chart_competition`, `multi_season_window`,
+    `experience_feature`, `sos_feature`) and `model_backend` are forwarded straight to
+    `run_backtest` -- left at their defaults this reproduces each position's adopted
+    `PositionConfig`, but issue #16's re-sweep overrides them one at a time to score
+    each feature-family variant on Disagreement Edge.
     """
-    result = run_backtest(position, seasons, min_train_seasons)
+    result = run_backtest(
+        position,
+        seasons,
+        min_train_seasons,
+        include_depth_chart_competition=include_depth_chart_competition,
+        multi_season_window=multi_season_window,
+        experience_feature=experience_feature,
+        sos_feature=sos_feature,
+        model_backend=model_backend,
+    )
 
     # `with_naive_baseline` needs weekly rows through each split's `train_through_season`
     # (always earlier than that split's `target_season`), so load the full requested
