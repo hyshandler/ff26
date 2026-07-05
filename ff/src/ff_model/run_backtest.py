@@ -3,6 +3,7 @@ import pandas as pd
 from ff_model.backtest import walk_forward_splits
 from ff_model.experience_features import ExperienceFeature
 from ff_model.features import MultiSeasonWindow
+from ff_model.naive_baseline import predict_naive_baseline, score_naive_baseline
 from ff_model.nflverse import SNAP_COUNTS_EARLIEST_SEASON
 from ff_model.pipeline import build_position_projections
 from ff_model.scoring import PPR, ScoringFormula
@@ -105,4 +106,31 @@ def with_adp_benchmark(backtest_result: pd.DataFrame, adp: pd.DataFrame, season:
     matched = result.loc[mask, ["player_id"]].merge(season_adp, on="player_id", how="left")["adp"]
     matched.index = result.loc[mask].index
     result.loc[mask, "adp"] = matched
+    return result
+
+
+def with_naive_baseline(
+    backtest_result: pd.DataFrame, weekly: pd.DataFrame, raw_stat_columns: list[str], formula: ScoringFormula = PPR
+) -> pd.DataFrame:
+    """Joins the naive trailing-average baseline's full-season projection onto a
+    `run_backtest` result, as `naive_full_projection` -- the same per-game-rate x
+    Games-Played Estimate shape as the model's full Projection, so the two are
+    directly comparable in the backtest report.
+
+    Computed per split, using only `weekly` rows through that row's own
+    `train_through_season`, respecting the same walk-forward boundary the model
+    itself trains within (no peeking at the target season).
+    """
+    result = backtest_result.copy()
+    result["naive_ppg"] = pd.NA
+    result["naive_full_projection"] = pd.NA
+    for train_through_season in result["train_through_season"].unique():
+        mask = result["train_through_season"] == train_through_season
+        player_ids = set(result.loc[mask, "player_id"])
+        naive_predictions = predict_naive_baseline(weekly, player_ids, train_through_season, raw_stat_columns)
+        naive_ppg = score_naive_baseline(naive_predictions, formula)
+        naive_ppg.index = naive_predictions["player_id"]
+        mapped = result.loc[mask, "player_id"].map(naive_ppg)
+        result.loc[mask, "naive_ppg"] = mapped.to_numpy()
+        result.loc[mask, "naive_full_projection"] = mapped.to_numpy() * result.loc[mask, "games_played_estimate"].to_numpy()
     return result

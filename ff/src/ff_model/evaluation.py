@@ -11,6 +11,38 @@ def mean_absolute_error(predicted: pd.Series, actual: pd.Series) -> float:
     return (predicted - actual).abs().mean()
 
 
+def matched_population_report(
+    df: pd.DataFrame,
+    actual_column: str,
+    matched_mask: pd.Series,
+    prediction_columns: dict[str, str],
+) -> dict:
+    """Spearman rho vs. `actual_column` for every predictor in `prediction_columns`,
+    computed on the Matched Population (per ADR-0010): the identical `matched_mask`
+    row set is used for every predictor, so populations are guaranteed to match
+    exactly rather than each predictor implicitly using its own non-null subset.
+
+    Full-population rho is also reported per predictor, but under a separate
+    `full_population_context_only` key -- per ADR-0010 it must never be cited as
+    evidence of an edge over ADP, only the matched-population numbers can be.
+
+    Predictors that need orientation flipped (e.g. ADP, where lower is better)
+    must already be pre-negated in the column `prediction_columns` points to.
+    """
+    matched = df.loc[matched_mask]
+    return {
+        "n_matched": int(matched_mask.sum()),
+        "matched_population": {
+            name: spearman_rank_correlation(matched[col], matched[actual_column])
+            for name, col in prediction_columns.items()
+        },
+        "full_population_context_only": {
+            name: spearman_rank_correlation(df[col], df[actual_column])
+            for name, col in prediction_columns.items()
+        },
+    }
+
+
 def spearman_rank_correlation(predicted: pd.Series, actual: pd.Series) -> float:
     """Spearman's rank correlation: how well `predicted`'s order matches `actual`'s.
 

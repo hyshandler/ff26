@@ -9,6 +9,7 @@ from ff_model.run_backtest import (
     run_backtest,
     with_actual_outcomes,
     with_adp_benchmark,
+    with_naive_baseline,
 )
 
 
@@ -101,6 +102,33 @@ def test_a_player_missing_from_the_adp_crosswalk_gets_a_nan_adp() -> None:
     result = with_adp_benchmark(backtest_result, adp, season=2022)
 
     assert pd.isna(result.loc[0, "adp"])
+
+
+def test_with_naive_baseline_projects_trailing_average_rate_times_games_played_estimate() -> None:
+    backtest_result = pd.DataFrame(
+        [
+            {
+                "player_id": "p1",
+                "target_season": 2023,
+                "train_through_season": 2022,
+                "games_played_estimate": 10.0,
+            }
+        ]
+    )
+    weekly = pd.DataFrame(
+        [
+            {"player_id": "p1", "season": 2022, "week": 1, "carries": 20, "rushing_yards": 100, "rushing_tds": 1},
+            # After the training cutoff -- must not leak into the naive baseline.
+            {"player_id": "p1", "season": 2023, "week": 1, "carries": 999, "rushing_yards": 999, "rushing_tds": 9},
+        ]
+    )
+
+    result = with_naive_baseline(backtest_result, weekly, raw_stat_columns=["carries", "rushing_yards", "rushing_tds"])
+
+    row = result.loc[0]
+    # PPR: 100 rushing_yards * 0.1 + 1 rushing_td * 6 = 16.0 naive_ppg.
+    assert row["naive_ppg"] == 16.0
+    assert row["naive_full_projection"] == 160.0
 
 
 @pytest.mark.network

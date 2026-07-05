@@ -4,6 +4,7 @@ import pytest
 from ff_model.evaluation import (
     bootstrap_confidence_interval,
     leave_one_split_out_metrics,
+    matched_population_report,
     mean_absolute_error,
     per_split_metrics,
     spearman_rank_correlation,
@@ -113,3 +114,35 @@ def test_leave_one_split_out_metrics_excludes_each_split_in_turn() -> None:
     assert result[2021] == pytest.approx(100.0)
     # Excluding 2022 (the huge miss) leaves only 2021's perfect rows -> MAE 0.
     assert result[2022] == pytest.approx(0.0)
+
+
+def test_matched_population_report_computes_each_predictor_on_the_identical_matched_rows() -> None:
+    """Per ADR-0010: model, ADP, and naive rho must all be computed on the same
+    row set (the Matched Population), not each predictor's own non-null subset."""
+    df = pd.DataFrame(
+        [
+            {"model": 4.0, "neg_adp": -1.0, "naive": 3.0, "actual": 40.0, "matched": True},
+            {"model": 3.0, "neg_adp": -2.0, "naive": 4.0, "actual": 30.0, "matched": True},
+            {"model": 2.0, "neg_adp": -3.0, "naive": 1.0, "actual": 20.0, "matched": True},
+            {"model": 1.0, "neg_adp": -4.0, "naive": 2.0, "actual": 10.0, "matched": True},
+            # Unmatched row: no ADP at all, huge model rank noise if ever mixed in.
+            {"model": 999.0, "neg_adp": None, "naive": 999.0, "actual": 1.0, "matched": False},
+        ]
+    )
+
+    report = matched_population_report(
+        df,
+        actual_column="actual",
+        matched_mask=df["matched"],
+        prediction_columns={"model": "model", "adp": "neg_adp", "naive": "naive"},
+    )
+
+    assert report["n_matched"] == 4
+    # model/neg_adp/actual are all perfectly co-ranked on the 4 matched rows -> rho 1.0.
+    assert report["matched_population"]["model"] == pytest.approx(1.0)
+    assert report["matched_population"]["adp"] == pytest.approx(1.0)
+    # naive's rank order on the matched rows (3,4,1,2) vs actual's (4,3,2,1) is imperfect.
+    assert report["matched_population"]["naive"] == pytest.approx(0.6)
+    # Full-population numbers are reported too, but under a clearly separate context-only key.
+    assert set(report["full_population_context_only"]) == {"model", "adp", "naive"}
+    assert report["full_population_context_only"]["model"] != report["matched_population"]["model"]
