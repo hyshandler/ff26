@@ -17,6 +17,7 @@ from ff_model.features import (
     multi_season_recency_weighted_averages,
 )
 from ff_model.games_played import estimate_games_played
+from ff_model.opportunity_vacuum import vacated_target_share_history
 from ff_model.nflverse import (
     load_draft_picks,
     load_injury_reports,
@@ -112,8 +113,8 @@ def build_position_projections(
     weekly_all_positions = load_weekly_stats(weekly_seasons)
     weekly = weekly_all_positions.loc[weekly_all_positions["position"] == position]
 
-    rosters = load_seasonal_rosters(weekly_seasons + [target_season])
-    rosters = rosters.loc[rosters["position"] == position]
+    full_rosters = load_seasonal_rosters(weekly_seasons + [target_season])
+    rosters = full_rosters.loc[full_rosters["position"] == position]
 
     eligible = veteran_player_ids(
         rosters, weekly, season=target_season, min_career_games=MIN_CAREER_GAMES
@@ -131,6 +132,12 @@ def build_position_projections(
     depth_chart_history = depth_chart_competition_history(
         rosters, draft_picks, weekly_seasons + [target_season]
     )
+
+    opportunity_vacuum_history = None
+    if config.needs_opportunity_vacuum:
+        opportunity_vacuum_history = vacated_target_share_history(
+            weekly_all_positions, full_rosters, weekly_seasons + [target_season]
+        )
 
     multi_season_history = None
     if multi_season_window != "none":
@@ -185,6 +192,7 @@ def build_position_projections(
         target_season=target_season,
         eligible_player_ids=eligible,
         include_depth_chart_competition=include_depth_chart_competition,
+        opportunity_vacuum_history=opportunity_vacuum_history,
         multi_season_history=multi_season_history,
         experience_history=experience_history,
         experience_feature=experience_feature,

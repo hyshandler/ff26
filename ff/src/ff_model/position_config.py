@@ -64,6 +64,14 @@ class PositionConfig:
     ADR-0015's round-1 WR feature engineering. RB/QB/TE stay off until a follow-up extends it.
     """
 
+    needs_opportunity_vacuum: bool = False
+    """Whether this position's feature set includes the Opportunity Vacuum family
+    (`vacated_target_share`, `prior_season_points_per_target`; issue #20/#23).
+
+    Same always-on, WR-only-for-now scoping as `needs_prior_season_totals`, per
+    ADR-0015's round-1 WR feature engineering.
+    """
+
     @property
     def needs_red_zone_data(self) -> bool:
         """Whether this position's share features need the play-by-play red-zone pull.
@@ -121,6 +129,7 @@ WR = PositionConfig(
     raw_stat_columns=_RECEIVER_RAW_STAT_COLUMNS,
     share_stat_columns=_RECEIVER_SHARE_STAT_COLUMNS,
     needs_prior_season_totals=True,
+    needs_opportunity_vacuum=True,
 )
 
 TE = PositionConfig(

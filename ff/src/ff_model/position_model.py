@@ -10,6 +10,7 @@ from ff_model.features import (
     season_ending_averages,
     season_ending_shares,
 )
+from ff_model.opportunity_vacuum import prior_season_points_per_target
 from ff_model.position_config import PositionConfig
 from ff_model.strength_of_schedule import SOS_FEATURE_COLUMN, SosFeature, add_actual_game_sos
 from ff_model.quantile_model import predict_quantiles, train_quantile_models
@@ -63,6 +64,11 @@ def feature_columns(
         if config.needs_prior_season_totals
         else []
     )
+    opportunity_vacuum_columns = (
+        ["vacated_target_share", "prior_season_points_per_target"]
+        if config.needs_opportunity_vacuum
+        else []
+    )
     multi_season_columns = (
         list(multi_season_stat_columns(config).keys()) if include_multi_season else []
     )
@@ -75,6 +81,7 @@ def feature_columns(
         + ["trailing_snap_pct"]
         + depth_chart_column
         + prior_season_columns
+        + opportunity_vacuum_columns
         + multi_season_columns
         + experience_columns
         + sos_columns
@@ -102,6 +109,36 @@ def _with_prior_season_totals(
     return weekly.merge(prior, on=["season", "player_id"], how="left")
 
 
+_EMPTY_OPPORTUNITY_VACUUM_HISTORY = pd.DataFrame(
+    {
+        "season": pd.Series(dtype="int64"),
+        "player_id": pd.Series(dtype="object"),
+        "vacated_target_share": pd.Series(dtype="float64"),
+    }
+)
+
+
+def _with_opportunity_vacuum(
+    config: PositionConfig,
+    weekly: pd.DataFrame,
+    weekly_all_positions: pd.DataFrame,
+    opportunity_vacuum_history: pd.DataFrame | None,
+) -> pd.DataFrame:
+    if not config.needs_opportunity_vacuum:
+        return weekly
+    seasons = sorted(int(season) for season in weekly_all_positions["season"].unique())
+    ppt = prior_season_points_per_target(weekly_all_positions, seasons)
+    weekly = weekly.merge(ppt, on=["season", "player_id"], how="left")
+    history = (
+        opportunity_vacuum_history
+        if opportunity_vacuum_history is not None
+        else _EMPTY_OPPORTUNITY_VACUUM_HISTORY
+    )
+    weekly = weekly.merge(history, on=["season", "player_id"], how="left")
+    weekly["vacated_target_share"] = weekly["vacated_target_share"].fillna(0.0).astype(float)
+    return weekly
+
+
 def _with_experience_history(weekly: pd.DataFrame, experience_history: pd.DataFrame) -> pd.DataFrame:
     return weekly.merge(experience_history, on=["season", "player_id"], how="left")
 
@@ -124,6 +161,7 @@ def add_position_features(
     red_zone_carries: pd.DataFrame,
     snap_pct: pd.DataFrame,
     depth_chart_history: pd.DataFrame,
+    opportunity_vacuum_history: pd.DataFrame | None = None,
     multi_season_history: pd.DataFrame | None = None,
     experience_history: pd.DataFrame | None = None,
     sos_history: pd.DataFrame | None = None,
@@ -145,6 +183,7 @@ def add_position_features(
     weekly = add_trailing_player_averages(weekly, _average_stat_columns(config, sos_feature))
     weekly = _with_depth_chart_competition(weekly, depth_chart_history)
     weekly = _with_prior_season_totals(config, weekly, weekly_all_positions)
+    weekly = _with_opportunity_vacuum(config, weekly, weekly_all_positions, opportunity_vacuum_history)
     if multi_season_history is not None:
         weekly = _with_multi_season_history(weekly, multi_season_history)
     if experience_history is not None:
@@ -164,6 +203,7 @@ def _prediction_features(
     season: int,
     target_season: int,
     player_ids: set[str],
+    opportunity_vacuum_history: pd.DataFrame | None = None,
     multi_season_history: pd.DataFrame | None = None,
     experience_history: pd.DataFrame | None = None,
     sos_history: pd.DataFrame | None = None,
@@ -198,6 +238,22 @@ def _prediction_features(
             target_prior_season.drop(columns="season"), on="player_id", how="left"
         )
 
+    # Like prior-season totals, both Opportunity Vacuum columns are keyed by the season
+    # the feature applies TO (`target_season`).
+    if config.needs_opportunity_vacuum:
+        target_ppt = prior_season_points_per_target(weekly_all_positions, seasons=[target_season])
+        features = features.merge(target_ppt.drop(columns="season"), on="player_id", how="left")
+        history = (
+            opportunity_vacuum_history
+            if opportunity_vacuum_history is not None
+            else _EMPTY_OPPORTUNITY_VACUUM_HISTORY
+        )
+        target_vacuum = history.loc[
+            history["season"] == target_season, ["player_id", "vacated_target_share"]
+        ]
+        features = features.merge(target_vacuum, on="player_id", how="left")
+        features["vacated_target_share"] = features["vacated_target_share"].fillna(0.0).astype(float)
+
     # Like the depth-chart flag, the multi-season history is keyed by the season the
     # feature applies TO (`target_season`), already computed from strictly-prior seasons.
     if multi_season_history is not None:
@@ -230,6 +286,7 @@ def build_position_model_projections(
     eligible_player_ids: set[str],
     model_backend: ModelBackend = "lightgbm",
     include_depth_chart_competition: bool = True,
+    opportunity_vacuum_history: pd.DataFrame | None = None,
     multi_season_history: pd.DataFrame | None = None,
     experience_history: pd.DataFrame | None = None,
     experience_feature: ExperienceFeature = "none",
@@ -264,6 +321,7 @@ def build_position_model_projections(
         red_zone_carries,
         snap_pct,
         depth_chart_history,
+        opportunity_vacuum_history=opportunity_vacuum_history,
         multi_season_history=multi_season_history,
         experience_history=experience_history,
         sos_history=sos_history,
@@ -281,6 +339,7 @@ def build_position_model_projections(
         season=train_through_season,
         target_season=target_season,
         player_ids=eligible_player_ids,
+        opportunity_vacuum_history=opportunity_vacuum_history,
         multi_season_history=multi_season_history,
         experience_history=experience_history,
         sos_history=sos_history,

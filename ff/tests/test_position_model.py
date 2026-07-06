@@ -200,6 +200,74 @@ def test_add_position_features_does_not_add_prior_season_totals_for_other_positi
     assert "prior_season_games_played" not in result.columns
 
 
+def test_feature_columns_only_includes_opportunity_vacuum_for_wr() -> None:
+    assert "vacated_target_share" in feature_columns(POSITION_CONFIGS["WR"])
+    assert "prior_season_points_per_target" in feature_columns(POSITION_CONFIGS["WR"])
+    for position in ("RB", "QB", "TE"):
+        assert "vacated_target_share" not in feature_columns(POSITION_CONFIGS[position])
+        assert "prior_season_points_per_target" not in feature_columns(POSITION_CONFIGS[position])
+
+
+def test_add_position_features_computes_opportunity_vacuum_for_wr() -> None:
+    config = POSITION_CONFIGS["WR"]
+    weekly = _weekly(
+        "WR",
+        config,
+        [
+            {
+                "season": 2022,
+                "week": 1,
+                "player_id": "p1",
+                "receiving_yards": 100,
+                "receptions": 10,
+                "receiving_tds": 1,
+                "targets": 20,
+            },
+            {"season": 2023, "week": 1, "player_id": "p1", "targets": 5},
+        ],
+    )
+    opportunity_vacuum_history = pd.DataFrame(
+        [
+            {"season": 2023, "player_id": "p1", "vacated_target_share": 0.25},
+        ]
+    )
+
+    result = add_position_features(
+        config,
+        weekly,
+        EMPTY_RED_ZONE,
+        EMPTY_SNAP_PCT,
+        EMPTY_DEPTH_CHART,
+        opportunity_vacuum_history=opportunity_vacuum_history,
+    )
+
+    row_2023 = result.loc[result["season"] == 2023].set_index("player_id").loc["p1"]
+    assert row_2023["vacated_target_share"] == pytest.approx(0.25)
+    assert row_2023["prior_season_points_per_target"] == pytest.approx(
+        (100 * 0.1 + 10 * 1 + 1 * 6) / 20
+    )
+
+    # 2022 has no prior season and no vacated-share row -- NaN own-efficiency, 0 vacancy.
+    row_2022 = result.loc[result["season"] == 2022].set_index("player_id").loc["p1"]
+    assert pd.isna(row_2022["prior_season_points_per_target"])
+    assert row_2022["vacated_target_share"] == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("position", ["RB", "QB", "TE"])
+def test_add_position_features_does_not_add_opportunity_vacuum_for_other_positions(
+    position: str,
+) -> None:
+    config = POSITION_CONFIGS[position]
+    weekly = _weekly(
+        position, config, [{"season": 2022, "week": 1, "player_id": "p1", "position": position}]
+    )
+
+    result = add_position_features(config, weekly, EMPTY_RED_ZONE, EMPTY_SNAP_PCT, EMPTY_DEPTH_CHART)
+
+    assert "vacated_target_share" not in result.columns
+    assert "prior_season_points_per_target" not in result.columns
+
+
 @pytest.mark.parametrize(
     "sos_feature,expected_column", [("season_wide", "season_wide_sos"), ("actual_games", "trailing_sos_faced")]
 )
