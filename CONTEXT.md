@@ -14,7 +14,24 @@ _Avoid_: points projection, fantasy score
 
 **Scoring Formula**:
 The league-specific function mapping raw predicted stats to fantasy points (e.g. PPR vs. standard). Applied downstream of the model as a final step, never baked into training, so the same underlying projections serve any league's rules.
+_Exception_ (`docs/adr/0015-wr-feature-engineering-round-1.md`): two WR training features (Prior-Season Total's fantasy-points column, Opportunity Vacuum's points-per-target column) apply the `PPR` formula directly to historical raw-stat totals as an *input*, not a downstream-only transform of model output. Narrow deviation, not a reversal — the model's output is still scored downstream for whichever league's formula the user wants.
 _Avoid_: scoring settings, league rules
+
+**Prior-Season Total**:
+A feature computed once from the immediately preceding season's completed totals — not a multi-season window, and not the within-season `trailing_avg_*` rate that resets at each season boundary. Captures the *total* (games played × rate), the one signal the per-game-rate design deliberately excludes. See `docs/adr/0015-wr-feature-engineering-round-1.md`.
+_Avoid_: trailing average (the within-season rate, a different feature), multi-season memory (the killed multi-year window family)
+
+**Opportunity Vacuum**:
+WR feature (issue #20) scoring a teammate's roster departure (trade, release, retirement, unsigned free agency — reason doesn't matter, detection is pure roster departure only, the same judgment-free standard as the Depth-Chart Competition Feature, `docs/adr/0004-team-context-deferred-except-depth-chart.md`) combined with the receiving player's own prior-season efficiency-per-target. Fed as two separate columns (vacated share, own efficiency), not a hand-multiplied composite.
+_Avoid_: in-season injury/IR departures as a trigger (requires guessing whether an absence is season-ending, the judgment call ADR-0004 excluded)
+
+**Own-Team Offensive Environment**:
+WR feature family: prior-season team pass attempts per game, points per game, and passing yards per attempt — how much opportunity the player's own offense generates. Distinct from Strength-of-Schedule (opponent-side, killed as noise in issue #16); this is the own-side angle SOS's re-sweep never tested.
+_Avoid_: SOS, schedule strength (opponent-side, a different feature)
+
+**Per-Touch Efficiency**:
+WR feature family measuring skill independent of volume: prior-season yards-per-target, and prior-season `avg_yac_above_expectation` sourced from NGS receiving data. NGS coverage only exists from 2016 onward — earlier seasons carry this feature as NaN, left as-is rather than narrowing the backtest window (`docs/adr/0015-wr-feature-engineering-round-1.md`).
+_Avoid_: opportunity, volume (this family is deliberately volume-independent — pairs with, doesn't replace, share/volume features)
 
 **Games-Played Estimate**:
 The availability half of a Projection (PPG Projection × Games-Played Estimate = season total). In v1 this is a heuristic — an age/position-conditioned base rate plus a recent-major-injury flag — not a trained submodel, based on research showing no strong player-level predictive signal for injury/availability exists in the literature.

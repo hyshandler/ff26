@@ -7,6 +7,7 @@ from ff_model.features import (
     multi_season_career_averages,
     multi_season_last_n_averages,
     multi_season_recency_weighted_averages,
+    prior_season_totals,
     season_ending_averages,
     season_ending_shares,
 )
@@ -181,3 +182,37 @@ def test_multi_season_recency_weighted_average_weights_more_recent_seasons_highe
     # (10*0.5 + 20*1.0) / (0.5 + 1.0) = 25/1.5
     row = result.loc[result["season"] == 2023].set_index("player_id").loc["p1"]
     assert row["ewm_avg_rushing_yards"] == pytest.approx(25 / 1.5)
+
+
+def test_prior_season_totals_uses_only_the_immediately_preceding_season() -> None:
+    weekly = _weekly(
+        [
+            # 2021 has huge totals -- must not leak into 2023's feature value, which
+            # should reflect only the immediately preceding season (2022).
+            {"season": 2021, "week": 1, "player_id": "p1", "receiving_yards": 999, "receptions": 99, "receiving_tds": 99},
+            {"season": 2022, "week": 1, "player_id": "p1", "receiving_yards": 50, "receptions": 5, "receiving_tds": 1},
+            {"season": 2022, "week": 2, "player_id": "p1", "receiving_yards": 30, "receptions": 3, "receiving_tds": 0},
+        ]
+    )
+
+    result = prior_season_totals(weekly, seasons=[2022, 2023])
+
+    # 2023's feature value: 2022's totals (80 receiving yards, 8 receptions, 1 TD, 2 games)
+    # scored via PPR (0.1/yd + 1/reception + 6/TD): 80*0.1 + 8*1 + 1*6 = 22.
+    row_2023 = result.loc[result["season"] == 2023].set_index("player_id").loc["p1"]
+    assert row_2023["prior_season_fantasy_points"] == pytest.approx(22.0)
+    assert row_2023["prior_season_games_played"] == 2
+
+
+def test_prior_season_totals_is_absent_not_zero_for_a_player_with_no_prior_season() -> None:
+    weekly = _weekly(
+        [
+            {"season": 2022, "week": 1, "player_id": "p1", "receiving_yards": 50, "receptions": 5, "receiving_tds": 1},
+            # p2 is a rookie in 2023 -- no 2022 row at all, unlike p1.
+            {"season": 2023, "week": 1, "player_id": "p2", "receiving_yards": 20, "receptions": 2, "receiving_tds": 0},
+        ]
+    )
+
+    result = prior_season_totals(weekly, seasons=[2022, 2023])
+
+    assert "p2" not in set(result.loc[result["season"] == 2023, "player_id"])

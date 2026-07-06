@@ -147,6 +147,59 @@ def test_feature_columns_can_include_multi_season_averages() -> None:
     assert "multi_season_avg_carries" in feature_columns(config, include_multi_season=True)
 
 
+def test_feature_columns_only_includes_prior_season_totals_for_wr() -> None:
+    assert "prior_season_fantasy_points" in feature_columns(POSITION_CONFIGS["WR"])
+    assert "prior_season_games_played" in feature_columns(POSITION_CONFIGS["WR"])
+    for position in ("RB", "QB", "TE"):
+        assert "prior_season_fantasy_points" not in feature_columns(POSITION_CONFIGS[position])
+        assert "prior_season_games_played" not in feature_columns(POSITION_CONFIGS[position])
+
+
+def test_add_position_features_computes_prior_season_totals_for_wr() -> None:
+    config = POSITION_CONFIGS["WR"]
+    weekly = _weekly(
+        "WR",
+        config,
+        [
+            {
+                "season": 2022,
+                "week": 1,
+                "player_id": "p1",
+                "receiving_yards": 100,
+                "receptions": 10,
+                "receiving_tds": 1,
+            },
+            {"season": 2023, "week": 1, "player_id": "p1"},
+        ],
+    )
+
+    result = add_position_features(config, weekly, EMPTY_RED_ZONE, EMPTY_SNAP_PCT, EMPTY_DEPTH_CHART)
+
+    row_2023 = result.loc[result["season"] == 2023].set_index("player_id").loc["p1"]
+    assert row_2023["prior_season_fantasy_points"] == pytest.approx(100 * 0.1 + 10 * 1 + 1 * 6)
+    assert row_2023["prior_season_games_played"] == 1
+
+    # 2022 is p1's first season -- no prior season, so NaN, not zero.
+    row_2022 = result.loc[result["season"] == 2022].set_index("player_id").loc["p1"]
+    assert pd.isna(row_2022["prior_season_fantasy_points"])
+    assert pd.isna(row_2022["prior_season_games_played"])
+
+
+@pytest.mark.parametrize("position", ["RB", "QB", "TE"])
+def test_add_position_features_does_not_add_prior_season_totals_for_other_positions(
+    position: str,
+) -> None:
+    config = POSITION_CONFIGS[position]
+    weekly = _weekly(
+        position, config, [{"season": 2022, "week": 1, "player_id": "p1", "position": position}]
+    )
+
+    result = add_position_features(config, weekly, EMPTY_RED_ZONE, EMPTY_SNAP_PCT, EMPTY_DEPTH_CHART)
+
+    assert "prior_season_fantasy_points" not in result.columns
+    assert "prior_season_games_played" not in result.columns
+
+
 @pytest.mark.parametrize(
     "sos_feature,expected_column", [("season_wide", "season_wide_sos"), ("actual_games", "trailing_sos_faced")]
 )

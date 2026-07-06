@@ -55,6 +55,15 @@ class PositionConfig:
     beat "none" -- see `docs/research/feature-family-re-sweep-2026-07.md`.
     """
 
+    needs_prior_season_totals: bool = False
+    """Whether this position's feature set includes the Prior-Season Total family
+    (`prior_season_fantasy_points`, `prior_season_games_played`).
+
+    Unlike `needs_red_zone_data`, this isn't derivable from another field -- it's a new,
+    always-on feature family (not swept under Disagreement Edge) scoped to WR only per
+    ADR-0015's round-1 WR feature engineering. RB/QB/TE stay off until a follow-up extends it.
+    """
+
     @property
     def needs_red_zone_data(self) -> bool:
         """Whether this position's share features need the play-by-play red-zone pull.
@@ -111,6 +120,7 @@ WR = PositionConfig(
     position="WR",
     raw_stat_columns=_RECEIVER_RAW_STAT_COLUMNS,
     share_stat_columns=_RECEIVER_SHARE_STAT_COLUMNS,
+    needs_prior_season_totals=True,
 )
 
 TE = PositionConfig(

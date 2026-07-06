@@ -3,6 +3,7 @@ from typing import Literal
 import pandas as pd
 
 from ff_model.feature_cache import cache_key, dataframe_fingerprint, disk_cached_frame
+from ff_model.scoring import PPR
 
 MultiSeasonWindow = Literal["none", "career", "last_n", "recency_weighted"]
 
@@ -101,6 +102,49 @@ def _season_totals(weekly: pd.DataFrame, stat_columns: dict[str, str]) -> pd.Dat
     totals = weekly.groupby(["season", "player_id"])[raw_columns].sum()
     totals["games"] = weekly.groupby(["season", "player_id"]).size()
     return totals.reset_index()
+
+
+def prior_season_totals(weekly_all_positions: pd.DataFrame, seasons: list[int]) -> pd.DataFrame:
+    """One row per (season, player_id) carrying the *immediately preceding* season's
+    completed totals: `prior_season_fantasy_points` (`ff_model.scoring.PPR`'s formula
+    applied to that prior season's raw stat totals) and `prior_season_games_played`.
+
+    `season` here is the season the feature applies TO (same convention as
+    `multi_season_history`) -- a row for season S holds S-1's totals. Distinct from
+    `multi_season_*_averages`: this is a single prior-season *total* (games played x
+    rate), not a multi-season window or a per-game rate. A player absent from season
+    S-1 (e.g. a rookie's first season) is simply absent from the result, so a left-merge
+    produces NaN rather than a misleading zero.
+
+    Bakes the PPR scoring formula into a training input -- a deliberate, narrow
+    exception to CONTEXT.md's "never bake the scoring formula into training" rule; see
+    ADR-0015 for the rationale.
+
+    Disk-cached (see `feature_cache`) keyed on `weekly_all_positions`'s content and `seasons`.
+    """
+    scored_columns = sorted(c for c in PPR.points_per_unit if c in weekly_all_positions.columns)
+    fingerprint = dataframe_fingerprint(weekly_all_positions[["season", "player_id", *scored_columns]])
+    key = cache_key(
+        "prior_season_totals", fingerprint, {c: c for c in scored_columns}, seasons=sorted(seasons)
+    )
+
+    def compute() -> pd.DataFrame:
+        totals = _season_totals(weekly_all_positions, {c: c for c in scored_columns})
+        points = pd.Series(0.0, index=totals.index)
+        for stat, points_per_unit in PPR.points_per_unit.items():
+            if stat in totals.columns:
+                points = points + totals[stat] * points_per_unit
+        result = pd.DataFrame(
+            {
+                "season": totals["season"] + 1,
+                "player_id": totals["player_id"],
+                "prior_season_fantasy_points": points,
+                "prior_season_games_played": totals["games"],
+            }
+        )
+        return result.loc[result["season"].isin(seasons)].reset_index(drop=True)
+
+    return disk_cached_frame(key, compute)
 
 
 def multi_season_career_averages(

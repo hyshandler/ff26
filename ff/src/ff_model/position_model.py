@@ -6,6 +6,7 @@ from ff_model.experience_features import EXPERIENCE_FEATURE_COLUMN, ExperienceFe
 from ff_model.features import (
     add_trailing_player_averages,
     add_trailing_team_shares,
+    prior_season_totals,
     season_ending_averages,
     season_ending_shares,
 )
@@ -57,6 +58,11 @@ def feature_columns(
     a trailing average aligned to actual games played) for the same kind of ablation.
     """
     depth_chart_column = ["depth_chart_competition"] if include_depth_chart_competition else []
+    prior_season_columns = (
+        ["prior_season_fantasy_points", "prior_season_games_played"]
+        if config.needs_prior_season_totals
+        else []
+    )
     multi_season_columns = (
         list(multi_season_stat_columns(config).keys()) if include_multi_season else []
     )
@@ -68,6 +74,7 @@ def feature_columns(
         list(config.share_stat_columns)
         + ["trailing_snap_pct"]
         + depth_chart_column
+        + prior_season_columns
         + multi_season_columns
         + experience_columns
         + sos_columns
@@ -83,6 +90,16 @@ def _with_depth_chart_competition(weekly: pd.DataFrame, depth_chart_history: pd.
 
 def _with_multi_season_history(weekly: pd.DataFrame, multi_season_history: pd.DataFrame) -> pd.DataFrame:
     return weekly.merge(multi_season_history, on=["season", "player_id"], how="left")
+
+
+def _with_prior_season_totals(
+    config: PositionConfig, weekly: pd.DataFrame, weekly_all_positions: pd.DataFrame
+) -> pd.DataFrame:
+    if not config.needs_prior_season_totals:
+        return weekly
+    seasons = sorted(int(season) for season in weekly_all_positions["season"].unique())
+    prior = prior_season_totals(weekly_all_positions, seasons)
+    return weekly.merge(prior, on=["season", "player_id"], how="left")
 
 
 def _with_experience_history(weekly: pd.DataFrame, experience_history: pd.DataFrame) -> pd.DataFrame:
@@ -127,6 +144,7 @@ def add_position_features(
         weekly = add_actual_game_sos(weekly, league_wide_trailing_points_allowed)
     weekly = add_trailing_player_averages(weekly, _average_stat_columns(config, sos_feature))
     weekly = _with_depth_chart_competition(weekly, depth_chart_history)
+    weekly = _with_prior_season_totals(config, weekly, weekly_all_positions)
     if multi_season_history is not None:
         weekly = _with_multi_season_history(weekly, multi_season_history)
     if experience_history is not None:
@@ -170,6 +188,15 @@ def _prediction_features(
     ]
     features = features.merge(target_flags, on="player_id", how="left")
     features["depth_chart_competition"] = features["depth_chart_competition"].fillna(0).astype(int)
+
+    # Like the depth-chart flag, prior-season totals are keyed by the season the feature
+    # applies TO (`target_season`) -- `season`'s just-completed totals become the
+    # "prior season" a Veteran carries into `target_season`.
+    if config.needs_prior_season_totals:
+        target_prior_season = prior_season_totals(weekly_all_positions, seasons=[target_season])
+        features = features.merge(
+            target_prior_season.drop(columns="season"), on="player_id", how="left"
+        )
 
     # Like the depth-chart flag, the multi-season history is keyed by the season the
     # feature applies TO (`target_season`), already computed from strictly-prior seasons.
