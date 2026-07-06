@@ -103,6 +103,27 @@ def load_schedules(seasons: list[int]) -> pd.DataFrame:
     return pd.concat([home, away], ignore_index=True)
 
 
+def load_team_scores(seasons: list[int]) -> pd.DataFrame:
+    """Team scoring from nflverse, long-format one row per (season, week, team) with
+    that week's own points scored -- unpivoted from home/away like `load_schedules`,
+    REG season only through `FANTASY_REGULAR_SEASON_MAX_WEEK`, for the Own-Team
+    Offensive Environment feature (issue #24). A team's bye week has no row.
+    """
+    df = _all_schedules()
+    regular_season = df.loc[
+        df["season"].isin(seasons)
+        & (df["game_type"] == "REG")
+        & (df["week"] <= FANTASY_REGULAR_SEASON_MAX_WEEK)
+    ]
+    home = regular_season[["season", "week", "home_team", "home_score"]].rename(
+        columns={"home_team": "team", "home_score": "points"}
+    )
+    away = regular_season[["season", "week", "away_team", "away_score"]].rename(
+        columns={"away_team": "team", "away_score": "points"}
+    )
+    return pd.concat([home, away], ignore_index=True)
+
+
 @lru_cache(maxsize=None)
 def _seasonal_roster_for_season(season: int) -> pd.DataFrame:
     return _disk_cached(

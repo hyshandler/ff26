@@ -268,6 +268,67 @@ def test_add_position_features_does_not_add_opportunity_vacuum_for_other_positio
     assert "prior_season_points_per_target" not in result.columns
 
 
+def test_feature_columns_only_includes_team_offensive_environment_for_wr() -> None:
+    team_env_columns = ["team_pass_attempts_per_game", "team_points_per_game", "team_passing_ypa"]
+    for column in team_env_columns:
+        assert column in feature_columns(POSITION_CONFIGS["WR"])
+    for position in ("RB", "QB", "TE"):
+        for column in team_env_columns:
+            assert column not in feature_columns(POSITION_CONFIGS[position])
+
+
+def test_add_position_features_computes_team_offensive_environment_for_wr() -> None:
+    config = POSITION_CONFIGS["WR"]
+    weekly = _weekly(
+        "WR",
+        config,
+        [
+            {"season": 2023, "week": 1, "player_id": "p1"},
+        ],
+    )
+    team_offensive_environment_history = pd.DataFrame(
+        [
+            {
+                "season": 2023,
+                "player_id": "p1",
+                "team_pass_attempts_per_game": 35.0,
+                "team_points_per_game": 25.0,
+                "team_passing_ypa": 7.5,
+            },
+        ]
+    )
+
+    result = add_position_features(
+        config,
+        weekly,
+        EMPTY_RED_ZONE,
+        EMPTY_SNAP_PCT,
+        EMPTY_DEPTH_CHART,
+        team_offensive_environment_history=team_offensive_environment_history,
+    )
+
+    row = result.set_index("player_id").loc["p1"]
+    assert row["team_pass_attempts_per_game"] == pytest.approx(35.0)
+    assert row["team_points_per_game"] == pytest.approx(25.0)
+    assert row["team_passing_ypa"] == pytest.approx(7.5)
+
+
+@pytest.mark.parametrize("position", ["RB", "QB", "TE"])
+def test_add_position_features_does_not_add_team_offensive_environment_for_other_positions(
+    position: str,
+) -> None:
+    config = POSITION_CONFIGS[position]
+    weekly = _weekly(
+        position, config, [{"season": 2022, "week": 1, "player_id": "p1", "position": position}]
+    )
+
+    result = add_position_features(config, weekly, EMPTY_RED_ZONE, EMPTY_SNAP_PCT, EMPTY_DEPTH_CHART)
+
+    assert "team_pass_attempts_per_game" not in result.columns
+    assert "team_points_per_game" not in result.columns
+    assert "team_passing_ypa" not in result.columns
+
+
 @pytest.mark.parametrize(
     "sos_feature,expected_column", [("season_wide", "season_wide_sos"), ("actual_games", "trailing_sos_faced")]
 )

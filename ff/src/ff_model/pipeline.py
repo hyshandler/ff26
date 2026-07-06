@@ -25,6 +25,7 @@ from ff_model.nflverse import (
     load_red_zone_rush_attempts,
     load_schedules,
     load_seasonal_rosters,
+    load_team_scores,
     load_weekly_stats,
     pfr_id_crosswalk,
 )
@@ -37,6 +38,10 @@ from ff_model.strength_of_schedule import (
     season_wide_sos_history,
     trailing_points_allowed,
     weekly_points_allowed,
+)
+from ff_model.team_offensive_environment import (
+    team_offensive_environment_by_player,
+    team_offensive_environment_history,
 )
 from ff_model.veterans import veteran_player_ids
 
@@ -139,6 +144,16 @@ def build_position_projections(
             weekly_all_positions, full_rosters, weekly_seasons + [target_season]
         )
 
+    team_offensive_environment_history_by_player = None
+    if config.needs_team_offensive_environment:
+        team_scores = load_team_scores(weekly_seasons)
+        team_env_by_team = team_offensive_environment_history(
+            weekly_all_positions, team_scores, weekly_seasons + [target_season]
+        )
+        team_offensive_environment_history_by_player = team_offensive_environment_by_player(
+            team_env_by_team, rosters
+        )
+
     multi_season_history = None
     if multi_season_window != "none":
         stat_columns = multi_season_stat_columns(config)
@@ -193,6 +208,7 @@ def build_position_projections(
         eligible_player_ids=eligible,
         include_depth_chart_competition=include_depth_chart_competition,
         opportunity_vacuum_history=opportunity_vacuum_history,
+        team_offensive_environment_history=team_offensive_environment_history_by_player,
         multi_season_history=multi_season_history,
         experience_history=experience_history,
         experience_feature=experience_feature,

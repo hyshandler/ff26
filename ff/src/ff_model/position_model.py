@@ -13,6 +13,7 @@ from ff_model.features import (
 from ff_model.opportunity_vacuum import prior_season_points_per_target
 from ff_model.position_config import PositionConfig
 from ff_model.strength_of_schedule import SOS_FEATURE_COLUMN, SosFeature, add_actual_game_sos
+from ff_model.team_offensive_environment import TEAM_OFFENSIVE_ENVIRONMENT_COLUMNS
 from ff_model.quantile_model import predict_quantiles, train_quantile_models
 from ff_model.rf_model import predict_rf_quantiles, train_rf_quantile_model
 from ff_model.tabfm_model import predict_tabfm_quantiles, train_tabfm_model
@@ -69,6 +70,9 @@ def feature_columns(
         if config.needs_opportunity_vacuum
         else []
     )
+    team_offensive_environment_columns = (
+        TEAM_OFFENSIVE_ENVIRONMENT_COLUMNS if config.needs_team_offensive_environment else []
+    )
     multi_season_columns = (
         list(multi_season_stat_columns(config).keys()) if include_multi_season else []
     )
@@ -82,6 +86,7 @@ def feature_columns(
         + depth_chart_column
         + prior_season_columns
         + opportunity_vacuum_columns
+        + team_offensive_environment_columns
         + multi_season_columns
         + experience_columns
         + sos_columns
@@ -139,6 +144,30 @@ def _with_opportunity_vacuum(
     return weekly
 
 
+_EMPTY_TEAM_OFFENSIVE_ENVIRONMENT_HISTORY = pd.DataFrame(
+    {
+        "season": pd.Series(dtype="int64"),
+        "player_id": pd.Series(dtype="object"),
+        **{column: pd.Series(dtype="float64") for column in TEAM_OFFENSIVE_ENVIRONMENT_COLUMNS},
+    }
+)
+
+
+def _with_team_offensive_environment(
+    config: PositionConfig,
+    weekly: pd.DataFrame,
+    team_offensive_environment_history: pd.DataFrame | None,
+) -> pd.DataFrame:
+    if not config.needs_team_offensive_environment:
+        return weekly
+    history = (
+        team_offensive_environment_history
+        if team_offensive_environment_history is not None
+        else _EMPTY_TEAM_OFFENSIVE_ENVIRONMENT_HISTORY
+    )
+    return weekly.merge(history, on=["season", "player_id"], how="left")
+
+
 def _with_experience_history(weekly: pd.DataFrame, experience_history: pd.DataFrame) -> pd.DataFrame:
     return weekly.merge(experience_history, on=["season", "player_id"], how="left")
 
@@ -162,6 +191,7 @@ def add_position_features(
     snap_pct: pd.DataFrame,
     depth_chart_history: pd.DataFrame,
     opportunity_vacuum_history: pd.DataFrame | None = None,
+    team_offensive_environment_history: pd.DataFrame | None = None,
     multi_season_history: pd.DataFrame | None = None,
     experience_history: pd.DataFrame | None = None,
     sos_history: pd.DataFrame | None = None,
@@ -184,6 +214,7 @@ def add_position_features(
     weekly = _with_depth_chart_competition(weekly, depth_chart_history)
     weekly = _with_prior_season_totals(config, weekly, weekly_all_positions)
     weekly = _with_opportunity_vacuum(config, weekly, weekly_all_positions, opportunity_vacuum_history)
+    weekly = _with_team_offensive_environment(config, weekly, team_offensive_environment_history)
     if multi_season_history is not None:
         weekly = _with_multi_season_history(weekly, multi_season_history)
     if experience_history is not None:
@@ -204,6 +235,7 @@ def _prediction_features(
     target_season: int,
     player_ids: set[str],
     opportunity_vacuum_history: pd.DataFrame | None = None,
+    team_offensive_environment_history: pd.DataFrame | None = None,
     multi_season_history: pd.DataFrame | None = None,
     experience_history: pd.DataFrame | None = None,
     sos_history: pd.DataFrame | None = None,
@@ -254,6 +286,20 @@ def _prediction_features(
         features = features.merge(target_vacuum, on="player_id", how="left")
         features["vacated_target_share"] = features["vacated_target_share"].fillna(0.0).astype(float)
 
+    # Like prior-season totals, the Own-Team Offensive Environment columns are keyed by
+    # the season the feature applies TO (`target_season`) -- they reflect the player's
+    # ROSTER team heading into `target_season`, not necessarily `season`'s team.
+    if config.needs_team_offensive_environment:
+        history = (
+            team_offensive_environment_history
+            if team_offensive_environment_history is not None
+            else _EMPTY_TEAM_OFFENSIVE_ENVIRONMENT_HISTORY
+        )
+        target_team_env = history.loc[
+            history["season"] == target_season, ["player_id", *TEAM_OFFENSIVE_ENVIRONMENT_COLUMNS]
+        ]
+        features = features.merge(target_team_env, on="player_id", how="left")
+
     # Like the depth-chart flag, the multi-season history is keyed by the season the
     # feature applies TO (`target_season`), already computed from strictly-prior seasons.
     if multi_season_history is not None:
@@ -287,6 +333,7 @@ def build_position_model_projections(
     model_backend: ModelBackend = "lightgbm",
     include_depth_chart_competition: bool = True,
     opportunity_vacuum_history: pd.DataFrame | None = None,
+    team_offensive_environment_history: pd.DataFrame | None = None,
     multi_season_history: pd.DataFrame | None = None,
     experience_history: pd.DataFrame | None = None,
     experience_feature: ExperienceFeature = "none",
@@ -322,6 +369,7 @@ def build_position_model_projections(
         snap_pct,
         depth_chart_history,
         opportunity_vacuum_history=opportunity_vacuum_history,
+        team_offensive_environment_history=team_offensive_environment_history,
         multi_season_history=multi_season_history,
         experience_history=experience_history,
         sos_history=sos_history,
@@ -340,6 +388,7 @@ def build_position_model_projections(
         target_season=target_season,
         player_ids=eligible_player_ids,
         opportunity_vacuum_history=opportunity_vacuum_history,
+        team_offensive_environment_history=team_offensive_environment_history,
         multi_season_history=multi_season_history,
         experience_history=experience_history,
         sos_history=sos_history,

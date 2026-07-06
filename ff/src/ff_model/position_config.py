@@ -72,6 +72,17 @@ class PositionConfig:
     ADR-0015's round-1 WR feature engineering.
     """
 
+    needs_team_offensive_environment: bool = False
+    """Whether this position's feature set includes the Own-Team Offensive Environment
+    family (`team_pass_attempts_per_game`, `team_points_per_game`, `team_passing_ypa`;
+    issue #24).
+
+    Same always-on, WR-only-for-now scoping as `needs_prior_season_totals`, per
+    ADR-0015's round-1 WR feature engineering. Distinct from Strength-of-Schedule (the
+    opponent's side, already found to be noise in issue #16) -- this is the player's own
+    offense's opportunity-generating environment.
+    """
+
     @property
     def needs_red_zone_data(self) -> bool:
         """Whether this position's share features need the play-by-play red-zone pull.
@@ -130,6 +141,7 @@ WR = PositionConfig(
     share_stat_columns=_RECEIVER_SHARE_STAT_COLUMNS,
     needs_prior_season_totals=True,
     needs_opportunity_vacuum=True,
+    needs_team_offensive_environment=True,
 )
 
 TE = PositionConfig(

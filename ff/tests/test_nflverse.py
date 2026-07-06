@@ -7,6 +7,7 @@ from ff_model.nflverse import (
     load_red_zone_rush_attempts,
     load_schedules,
     load_seasonal_rosters,
+    load_team_scores,
     load_weekly_stats,
     pfr_id_crosswalk,
 )
@@ -156,3 +157,14 @@ def test_load_schedules_gives_each_team_one_row_per_week_with_its_opponent() -> 
     kc_week1 = result.loc[(result["team"] == "KC") & (result["week"] == 1) & (result["season"] == 2023)]
     assert len(kc_week1) == 1
     assert kc_week1.iloc[0]["opponent_team"] == "DET"
+
+
+@pytest.mark.network
+def test_load_team_scores_gives_each_team_its_own_points_scored_per_game() -> None:
+    result = load_team_scores([2023])
+
+    assert {"season", "week", "team", "points"} <= set(result.columns)
+    assert (result["week"] <= 17).all()
+    kc_week1 = result.loc[(result["team"] == "KC") & (result["week"] == 1) & (result["season"] == 2023)]
+    assert len(kc_week1) == 1
+    assert kc_week1.iloc[0]["points"] == 20.0
