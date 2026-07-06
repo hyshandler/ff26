@@ -3,6 +3,7 @@ import pytest
 from ff_model.nflverse import (
     load_draft_picks,
     load_injury_reports,
+    load_ngs_receiving,
     load_offense_snap_pct,
     load_red_zone_rush_attempts,
     load_schedules,
@@ -168,3 +169,29 @@ def test_load_team_scores_gives_each_team_its_own_points_scored_per_game() -> No
     kc_week1 = result.loc[(result["team"] == "KC") & (result["week"] == 1) & (result["season"] == 2023)]
     assert len(kc_week1) == 1
     assert kc_week1.iloc[0]["points"] == 20.0
+
+
+@pytest.mark.network
+def test_load_ngs_receiving_covers_2016_onward() -> None:
+    result = load_ngs_receiving([2023])
+
+    assert {"player_id", "season", "avg_yac_above_expectation"} <= set(result.columns)
+    assert (result["season"] == 2023).all()
+    assert len(result) > 0
+    # Season-level rows only -- one per player, not one per player-week.
+    assert result["player_id"].is_unique
+
+
+def test_load_ngs_receiving_drops_seasons_before_coverage_begins() -> None:
+    # No seasons requested are >= NGS_RECEIVING_EARLIEST_SEASON, so this returns
+    # before making any network call -- doesn't need @pytest.mark.network.
+    result = load_ngs_receiving([2010])
+
+    assert result.empty
+    assert {"player_id", "season", "avg_yac_above_expectation"} <= set(result.columns)
+    # Regression test: an untyped empty frame defaults every column to `object`,
+    # which poisons downstream merges into LightGBM's training matrix (it rejects
+    # `object`-dtype columns outright) on any Walk-Forward split trained entirely
+    # on pre-2016 seasons.
+    assert result["season"].dtype == "int64"
+    assert result["avg_yac_above_expectation"].dtype == "float64"

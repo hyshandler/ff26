@@ -1,11 +1,13 @@
 import pandas as pd
 import pytest
 
+from ff_model import position_model
 from ff_model.position_config import POSITION_CONFIGS, PositionConfig
 from ff_model.position_model import (
     add_position_features,
     build_position_model_projections,
     feature_columns,
+    permute_feature_columns,
 )
 
 EMPTY_RED_ZONE = pd.DataFrame(columns=["season", "week", "player_id", "red_zone_carries"])
@@ -329,6 +331,70 @@ def test_add_position_features_does_not_add_team_offensive_environment_for_other
     assert "team_passing_ypa" not in result.columns
 
 
+def test_feature_columns_only_includes_per_touch_efficiency_for_wr() -> None:
+    per_touch_columns = ["prior_season_yards_per_target", "prior_season_yac_above_expectation"]
+    for column in per_touch_columns:
+        assert column in feature_columns(POSITION_CONFIGS["WR"])
+    for position in ("RB", "QB", "TE"):
+        for column in per_touch_columns:
+            assert column not in feature_columns(POSITION_CONFIGS[position])
+
+
+def test_add_position_features_computes_per_touch_efficiency_for_wr() -> None:
+    config = POSITION_CONFIGS["WR"]
+    weekly = _weekly(
+        "WR",
+        config,
+        [
+            {
+                "season": 2022,
+                "week": 1,
+                "player_id": "p1",
+                "receiving_yards": 100,
+                "targets": 10,
+            },
+            {"season": 2023, "week": 1, "player_id": "p1"},
+        ],
+    )
+    per_touch_efficiency_history = pd.DataFrame(
+        [{"season": 2023, "player_id": "p1", "prior_season_yac_above_expectation": 2.5}]
+    )
+
+    result = add_position_features(
+        config,
+        weekly,
+        EMPTY_RED_ZONE,
+        EMPTY_SNAP_PCT,
+        EMPTY_DEPTH_CHART,
+        per_touch_efficiency_history=per_touch_efficiency_history,
+    )
+
+    row_2023 = result.loc[result["season"] == 2023].set_index("player_id").loc["p1"]
+    assert row_2023["prior_season_yards_per_target"] == pytest.approx(10.0)
+    assert row_2023["prior_season_yac_above_expectation"] == pytest.approx(2.5)
+
+    # 2022 is p1's first season -- no prior season, so NaN, not zero or an error --
+    # same as a target season before NGS's 2016 coverage begins (issue #25).
+    row_2022 = result.loc[result["season"] == 2022].set_index("player_id").loc["p1"]
+    assert pd.isna(row_2022["prior_season_yards_per_target"])
+    assert pd.isna(row_2022["prior_season_yac_above_expectation"])
+
+
+@pytest.mark.parametrize("position", ["RB", "QB", "TE"])
+def test_add_position_features_does_not_add_per_touch_efficiency_for_other_positions(
+    position: str,
+) -> None:
+    config = POSITION_CONFIGS[position]
+    weekly = _weekly(
+        position, config, [{"season": 2022, "week": 1, "player_id": "p1", "position": position}]
+    )
+
+    result = add_position_features(config, weekly, EMPTY_RED_ZONE, EMPTY_SNAP_PCT, EMPTY_DEPTH_CHART)
+
+    assert "prior_season_yards_per_target" not in result.columns
+    assert "prior_season_yac_above_expectation" not in result.columns
+
+
 @pytest.mark.parametrize(
     "sos_feature,expected_column", [("season_wide", "season_wide_sos"), ("actual_games", "trailing_sos_faced")]
 )
@@ -538,3 +604,91 @@ def test_build_position_model_projections_produces_monotonic_quantiles_for_every
         for stat in config.raw_stat_columns:
             assert (result[f"{stat}_p10"] <= result[f"{stat}_p50"]).all(), (position, stat)
             assert (result[f"{stat}_p50"] <= result[f"{stat}_p90"]).all(), (position, stat)
+
+
+def test_permute_feature_columns_shuffles_row_order() -> None:
+    X = pd.DataFrame({"a": [1, 2, 3, 4, 5], "b": [10, 20, 30, 40, 50]})
+
+    result = permute_feature_columns(X, ["a"], random_state=0)
+
+    # Same multiset of values, but not still lined up 1:1 with the original row order.
+    assert sorted(result["a"]) == [1, 2, 3, 4, 5]
+    assert not (result["a"].to_numpy() == X["a"].to_numpy()).all()
+    # Untouched column is unaffected.
+    assert (result["b"].to_numpy() == X["b"].to_numpy()).all()
+
+
+def test_permute_feature_columns_is_a_noop_when_no_columns_given() -> None:
+    X = pd.DataFrame({"a": [1, 2, 3]})
+
+    assert permute_feature_columns(X, None, random_state=0) is X
+    assert permute_feature_columns(X, [], random_state=0) is X
+
+
+def test_permute_feature_columns_skips_a_column_absent_from_x() -> None:
+    X = pd.DataFrame({"a": [1, 2, 3]})
+
+    result = permute_feature_columns(X, ["not_present"], random_state=0)
+
+    assert (result["a"].to_numpy() == X["a"].to_numpy()).all()
+
+
+def test_build_position_model_projections_applies_permute_feature_columns_to_x_predict(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # LightGBM's own tree-splitting behavior on tiny synthetic data isn't a reliable
+    # signal (it may ignore a feature entirely with too little data/variety), so this
+    # spies on the call instead of asserting an end-to-end prediction change.
+    config = POSITION_CONFIGS["RB"]
+    rows = [
+        {
+            "season": 2022,
+            "week": week,
+            "player_id": f"p{i}",
+            "position": "RB",
+            "carries": 10 + i,
+            "rushing_yards": (10 + i) * 4,
+        }
+        for week in (1, 2)
+        for i in range(6)
+    ]
+    weekly_all_positions = _weekly("RB", config, rows)
+    # An empty-but-typed snap_pct frame: with no real rows to merge in either case, the
+    # module-level EMPTY_SNAP_PCT's untyped `offense_pct` column leaves `trailing_snap_pct`
+    # as `object` dtype, which LightGBM's default backend rejects outright.
+    snap_pct = pd.DataFrame(
+        {
+            "season": pd.Series(dtype="int64"),
+            "week": pd.Series(dtype="int64"),
+            "player_id": pd.Series(dtype="object"),
+            "offense_pct": pd.Series(dtype="float64"),
+        }
+    )
+
+    calls = []
+    real_permute = position_model.permute_feature_columns
+
+    def spy(X: pd.DataFrame, columns: list[str] | None, random_state: int) -> pd.DataFrame:
+        calls.append((list(X.columns), columns, random_state))
+        return real_permute(X, columns, random_state)
+
+    monkeypatch.setattr(position_model, "permute_feature_columns", spy)
+
+    build_position_model_projections(
+        config,
+        weekly_all_positions,
+        EMPTY_RED_ZONE,
+        snap_pct,
+        EMPTY_DEPTH_CHART,
+        train_through_season=2022,
+        target_season=2023,
+        eligible_player_ids={f"p{i}" for i in range(6)},
+        permute_columns=["trailing_avg_carries"],
+        permute_random_state=7,
+    )
+
+    assert len(calls) == 1
+    x_columns, columns, random_state = calls[0]
+    assert columns == ["trailing_avg_carries"]
+    assert random_state == 7
+    assert "trailing_avg_carries" in x_columns

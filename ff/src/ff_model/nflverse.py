@@ -279,3 +279,48 @@ def load_offense_snap_pct(seasons: list[int], pfr_id_by_player_id: pd.Series) ->
     return snap_counts.loc[
         snap_counts["player_id"].notna(), ["player_id", "season", "week", "offense_pct"]
     ]
+
+
+NGS_RECEIVING_EARLIEST_SEASON = 2016
+"""nflverse's Next Gen Stats receiving data doesn't go back further than this."""
+
+
+@lru_cache(maxsize=None)
+def _ngs_receiving_for_season(season: int) -> pd.DataFrame:
+    return _disk_cached(
+        f"ngs_receiving/{season}.parquet", lambda: nfl.import_ngs_data("receiving", [season])
+    )
+
+
+def load_ngs_receiving(seasons: list[int]) -> pd.DataFrame:
+    """Season-level Next Gen Stats receiving efficiency per player, from nflverse.
+
+    Exposes `avg_yac_above_expectation` for the Per-Touch Efficiency feature (issue #25).
+    Seasons before `NGS_RECEIVING_EARLIEST_SEASON` are silently dropped, same gap-handling
+    pattern as `load_offense_snap_pct`'s `SNAP_COUNTS_EARLIEST_SEASON` -- nflverse simply has
+    no NGS data for them. `nfl_data_py.import_ngs_data` returns one row per player per week
+    plus a `week == 0` row holding that player's season-level aggregate; filtered to those
+    `week == 0` rows and `season_type == "REG"`, matching `FANTASY_REGULAR_SEASON_MAX_WEEK`'s
+    regular-season-only convention elsewhere. One parquet file per season (like
+    `load_weekly_stats`); same per-season caching applies.
+    """
+    available_seasons = [s for s in seasons if s >= NGS_RECEIVING_EARLIEST_SEASON]
+    if not available_seasons:
+        # Explicit dtypes, not just column names: an untyped empty frame defaults
+        # every column to `object`, which then poisons `avg_yac_above_expectation`
+        # as `object` all the way through the merge chain into LightGBM's training
+        # matrix -- surfaces for real on any Walk-Forward split trained entirely on
+        # pre-2016 seasons, not just in synthetic test data.
+        return pd.DataFrame(
+            {
+                "player_id": pd.Series(dtype="object"),
+                "season": pd.Series(dtype="int64"),
+                "avg_yac_above_expectation": pd.Series(dtype="float64"),
+            }
+        )
+
+    ngs = pd.concat([_ngs_receiving_for_season(season) for season in available_seasons])
+    season_level = ngs.loc[(ngs["week"] == 0) & (ngs["season_type"] == "REG")]
+    return season_level.rename(columns={"player_gsis_id": "player_id"})[
+        ["player_id", "season", "avg_yac_above_expectation"]
+    ]

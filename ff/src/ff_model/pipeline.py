@@ -21,6 +21,7 @@ from ff_model.opportunity_vacuum import vacated_target_share_history
 from ff_model.nflverse import (
     load_draft_picks,
     load_injury_reports,
+    load_ngs_receiving,
     load_offense_snap_pct,
     load_red_zone_rush_attempts,
     load_schedules,
@@ -29,6 +30,7 @@ from ff_model.nflverse import (
     load_weekly_stats,
     pfr_id_crosswalk,
 )
+from ff_model.per_touch_efficiency import prior_season_yac_above_expectation_history
 from ff_model.position_config import POSITION_CONFIGS
 from ff_model.position_model import ModelBackend, build_position_model_projections, multi_season_stat_columns
 from ff_model.scoring import PPR, QUANTILE_SUFFIXES, score_projections
@@ -80,6 +82,8 @@ def build_position_projections(
     experience_feature: ExperienceFeature | None = None,
     sos_feature: SosFeature | None = None,
     model_backend: ModelBackend = "lightgbm",
+    permute_columns: list[str] | None = None,
+    permute_random_state: int = 0,
 ) -> PositionProjections:
     """Ingest -> filter -> predict -> output, for one position and one Walk-Forward split.
 
@@ -154,6 +158,13 @@ def build_position_projections(
             team_env_by_team, rosters
         )
 
+    per_touch_efficiency_history = None
+    if config.needs_per_touch_efficiency:
+        ngs_receiving = load_ngs_receiving(weekly_seasons)
+        per_touch_efficiency_history = prior_season_yac_above_expectation_history(
+            ngs_receiving, weekly_seasons + [target_season]
+        )
+
     multi_season_history = None
     if multi_season_window != "none":
         stat_columns = multi_season_stat_columns(config)
@@ -209,6 +220,7 @@ def build_position_projections(
         include_depth_chart_competition=include_depth_chart_competition,
         opportunity_vacuum_history=opportunity_vacuum_history,
         team_offensive_environment_history=team_offensive_environment_history_by_player,
+        per_touch_efficiency_history=per_touch_efficiency_history,
         multi_season_history=multi_season_history,
         experience_history=experience_history,
         experience_feature=experience_feature,
@@ -216,6 +228,8 @@ def build_position_projections(
         league_wide_trailing_points_allowed=league_wide_trailing_points_allowed,
         sos_feature=sos_feature,
         model_backend=model_backend,
+        permute_columns=permute_columns,
+        permute_random_state=permute_random_state,
     )
 
     injury_reports = load_injury_reports(weekly_seasons)

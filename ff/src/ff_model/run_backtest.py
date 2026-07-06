@@ -41,8 +41,15 @@ def run_backtest(
     experience_feature: ExperienceFeature | None = None,
     sos_feature: SosFeature | None = None,
     model_backend: ModelBackend = "lightgbm",
+    permute_columns: list[str] | None = None,
+    permute_random_state: int = 0,
 ) -> pd.DataFrame:
-    """Run the Walk-Forward Backtest for one position and concatenate every split's output."""
+    """Run the Walk-Forward Backtest for one position and concatenate every split's output.
+
+    `permute_columns`, if given, is passed through to `build_position_projections` on every
+    split -- permutation feature importance (issue #26) applied consistently across the
+    whole backtest range, not just one split.
+    """
     splits = walk_forward_splits(seasons, min_train_seasons)
 
     split_frames = []
@@ -56,6 +63,8 @@ def run_backtest(
             experience_feature=experience_feature,
             sos_feature=sos_feature,
             model_backend=model_backend,
+            permute_columns=permute_columns,
+            permute_random_state=permute_random_state,
         )
         frame = result.projections.copy()
         frame.insert(1, "train_through_season", train_through_season)
@@ -159,6 +168,8 @@ def build_backtest_report(
     experience_feature: ExperienceFeature | None = None,
     sos_feature: SosFeature | None = None,
     model_backend: ModelBackend = "lightgbm",
+    permute_columns: list[str] | None = None,
+    permute_random_state: int = 0,
 ) -> dict:
     """Runs the Walk-Forward Backtest for `position` end-to-end and scores it per
     ADR-0010/issue #13: Answer Key actual outcomes, ADP Benchmark, and the naive
@@ -184,6 +195,8 @@ def build_backtest_report(
         experience_feature=experience_feature,
         sos_feature=sos_feature,
         model_backend=model_backend,
+        permute_columns=permute_columns,
+        permute_random_state=permute_random_state,
     )
 
     # `with_naive_baseline` needs weekly rows through each split's `train_through_season`

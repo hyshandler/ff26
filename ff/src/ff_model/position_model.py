@@ -1,5 +1,6 @@
 from typing import Literal
 
+import numpy as np
 import pandas as pd
 
 from ff_model.experience_features import EXPERIENCE_FEATURE_COLUMN, ExperienceFeature
@@ -11,6 +12,7 @@ from ff_model.features import (
     season_ending_shares,
 )
 from ff_model.opportunity_vacuum import prior_season_points_per_target
+from ff_model.per_touch_efficiency import PER_TOUCH_EFFICIENCY_COLUMNS, prior_season_yards_per_target
 from ff_model.position_config import PositionConfig
 from ff_model.strength_of_schedule import SOS_FEATURE_COLUMN, SosFeature, add_actual_game_sos
 from ff_model.team_offensive_environment import TEAM_OFFENSIVE_ENVIRONMENT_COLUMNS
@@ -73,6 +75,9 @@ def feature_columns(
     team_offensive_environment_columns = (
         TEAM_OFFENSIVE_ENVIRONMENT_COLUMNS if config.needs_team_offensive_environment else []
     )
+    per_touch_efficiency_columns = (
+        PER_TOUCH_EFFICIENCY_COLUMNS if config.needs_per_touch_efficiency else []
+    )
     multi_season_columns = (
         list(multi_season_stat_columns(config).keys()) if include_multi_season else []
     )
@@ -87,6 +92,7 @@ def feature_columns(
         + prior_season_columns
         + opportunity_vacuum_columns
         + team_offensive_environment_columns
+        + per_touch_efficiency_columns
         + multi_season_columns
         + experience_columns
         + sos_columns
@@ -168,8 +174,56 @@ def _with_team_offensive_environment(
     return weekly.merge(history, on=["season", "player_id"], how="left")
 
 
+_EMPTY_PER_TOUCH_EFFICIENCY_HISTORY = pd.DataFrame(
+    {
+        "season": pd.Series(dtype="int64"),
+        "player_id": pd.Series(dtype="object"),
+        "prior_season_yac_above_expectation": pd.Series(dtype="float64"),
+    }
+)
+
+
+def _with_per_touch_efficiency(
+    config: PositionConfig,
+    weekly: pd.DataFrame,
+    weekly_all_positions: pd.DataFrame,
+    per_touch_efficiency_history: pd.DataFrame | None,
+) -> pd.DataFrame:
+    if not config.needs_per_touch_efficiency:
+        return weekly
+    seasons = sorted(int(season) for season in weekly_all_positions["season"].unique())
+    ypt = prior_season_yards_per_target(weekly_all_positions, seasons)
+    weekly = weekly.merge(ypt, on=["season", "player_id"], how="left")
+    history = (
+        per_touch_efficiency_history
+        if per_touch_efficiency_history is not None
+        else _EMPTY_PER_TOUCH_EFFICIENCY_HISTORY
+    )
+    return weekly.merge(history, on=["season", "player_id"], how="left")
+
+
 def _with_experience_history(weekly: pd.DataFrame, experience_history: pd.DataFrame) -> pd.DataFrame:
     return weekly.merge(experience_history, on=["season", "player_id"], how="left")
+
+
+def permute_feature_columns(
+    X: pd.DataFrame, columns: list[str] | None, random_state: int
+) -> pd.DataFrame:
+    """Shuffle `columns`' values (row order only, independent of each other) for
+    permutation feature importance (issue #26): scrambling a column's prediction-time
+    values severs whatever relationship it had to the outcome, so the resulting drop in
+    a downstream metric (e.g. Disagreement Edge) isolates that column's contribution.
+    A column absent from `X` (e.g. swept out by a position's `PositionConfig`) is
+    silently skipped rather than raising.
+    """
+    if not columns:
+        return X
+    rng = np.random.default_rng(random_state)
+    X = X.copy()
+    for column in columns:
+        if column in X.columns:
+            X[column] = rng.permutation(X[column].to_numpy())
+    return X
 
 
 def _with_red_zone_carries(
@@ -192,6 +246,7 @@ def add_position_features(
     depth_chart_history: pd.DataFrame,
     opportunity_vacuum_history: pd.DataFrame | None = None,
     team_offensive_environment_history: pd.DataFrame | None = None,
+    per_touch_efficiency_history: pd.DataFrame | None = None,
     multi_season_history: pd.DataFrame | None = None,
     experience_history: pd.DataFrame | None = None,
     sos_history: pd.DataFrame | None = None,
@@ -215,6 +270,7 @@ def add_position_features(
     weekly = _with_prior_season_totals(config, weekly, weekly_all_positions)
     weekly = _with_opportunity_vacuum(config, weekly, weekly_all_positions, opportunity_vacuum_history)
     weekly = _with_team_offensive_environment(config, weekly, team_offensive_environment_history)
+    weekly = _with_per_touch_efficiency(config, weekly, weekly_all_positions, per_touch_efficiency_history)
     if multi_season_history is not None:
         weekly = _with_multi_season_history(weekly, multi_season_history)
     if experience_history is not None:
@@ -236,6 +292,7 @@ def _prediction_features(
     player_ids: set[str],
     opportunity_vacuum_history: pd.DataFrame | None = None,
     team_offensive_environment_history: pd.DataFrame | None = None,
+    per_touch_efficiency_history: pd.DataFrame | None = None,
     multi_season_history: pd.DataFrame | None = None,
     experience_history: pd.DataFrame | None = None,
     sos_history: pd.DataFrame | None = None,
@@ -300,6 +357,23 @@ def _prediction_features(
         ]
         features = features.merge(target_team_env, on="player_id", how="left")
 
+    # Like prior-season totals, both Per-Touch Efficiency columns are keyed by the
+    # season the feature applies TO (`target_season`).
+    if config.needs_per_touch_efficiency:
+        target_ypt = prior_season_yards_per_target(weekly_all_positions, seasons=[target_season])
+        features = features.merge(target_ypt.drop(columns="season"), on="player_id", how="left")
+
+        history = (
+            per_touch_efficiency_history
+            if per_touch_efficiency_history is not None
+            else _EMPTY_PER_TOUCH_EFFICIENCY_HISTORY
+        )
+        target_yac = history.loc[
+            history["season"] == target_season,
+            ["player_id", "prior_season_yac_above_expectation"],
+        ]
+        features = features.merge(target_yac, on="player_id", how="left")
+
     # Like the depth-chart flag, the multi-season history is keyed by the season the
     # feature applies TO (`target_season`), already computed from strictly-prior seasons.
     if multi_season_history is not None:
@@ -334,12 +408,15 @@ def build_position_model_projections(
     include_depth_chart_competition: bool = True,
     opportunity_vacuum_history: pd.DataFrame | None = None,
     team_offensive_environment_history: pd.DataFrame | None = None,
+    per_touch_efficiency_history: pd.DataFrame | None = None,
     multi_season_history: pd.DataFrame | None = None,
     experience_history: pd.DataFrame | None = None,
     experience_feature: ExperienceFeature = "none",
     sos_history: pd.DataFrame | None = None,
     league_wide_trailing_points_allowed: pd.DataFrame | None = None,
     sos_feature: SosFeature = "none",
+    permute_columns: list[str] | None = None,
+    permute_random_state: int = 0,
 ) -> pd.DataFrame:
     """Train a quantile model per raw stat, and project each eligible Veteran.
 
@@ -360,6 +437,12 @@ def build_position_model_projections(
     + `trailing_points_allowed`), joined per-week onto each player's own opponent and then
     trailing-averaged like any other raw stat -- automatically aligned to games actually
     played, unlike the season-wide schedule average.
+
+    `permute_columns`, if given, shuffles those columns' *prediction-time* values (via
+    `permute_random_state`) after training but before predicting -- permutation feature
+    importance (issue #26): the model trains normally, only the target season's inputs
+    are scrambled, so the resulting drop in downstream metrics (e.g. Disagreement Edge)
+    isolates that column's/family's contribution versus riding along inert.
     """
     include_multi_season = multi_season_history is not None
     training = add_position_features(
@@ -370,6 +453,7 @@ def build_position_model_projections(
         depth_chart_history,
         opportunity_vacuum_history=opportunity_vacuum_history,
         team_offensive_environment_history=team_offensive_environment_history,
+        per_touch_efficiency_history=per_touch_efficiency_history,
         multi_season_history=multi_season_history,
         experience_history=experience_history,
         sos_history=sos_history,
@@ -389,6 +473,7 @@ def build_position_model_projections(
         player_ids=eligible_player_ids,
         opportunity_vacuum_history=opportunity_vacuum_history,
         team_offensive_environment_history=team_offensive_environment_history,
+        per_touch_efficiency_history=per_touch_efficiency_history,
         multi_season_history=multi_season_history,
         experience_history=experience_history,
         sos_history=sos_history,
@@ -414,6 +499,7 @@ def build_position_model_projections(
     )
     X_train = training[columns]
     X_predict = prediction_features[columns]
+    X_predict = permute_feature_columns(X_predict, permute_columns, permute_random_state)
     for stat in config.raw_stat_columns:
         if model_backend == "lightgbm":
             models = train_quantile_models(X_train, training[stat])

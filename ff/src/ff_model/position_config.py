@@ -83,6 +83,15 @@ class PositionConfig:
     offense's opportunity-generating environment.
     """
 
+    needs_per_touch_efficiency: bool = False
+    """Whether this position's feature set includes the Per-Touch Efficiency family
+    (`prior_season_yards_per_target`, `prior_season_yac_above_expectation`; issue #25).
+
+    Same always-on, WR-only-for-now scoping as `needs_prior_season_totals`, per
+    ADR-0015's round-1 WR feature engineering. Skill-independent-of-volume usage
+    efficiency, distinct from `needs_opportunity_vacuum`'s share-of-team-volume signal.
+    """
+
     @property
     def needs_red_zone_data(self) -> bool:
         """Whether this position's share features need the play-by-play red-zone pull.
@@ -142,6 +151,7 @@ WR = PositionConfig(
     needs_prior_season_totals=True,
     needs_opportunity_vacuum=True,
     needs_team_offensive_environment=True,
+    needs_per_touch_efficiency=True,
 )
 
 TE = PositionConfig(
