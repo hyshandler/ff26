@@ -67,7 +67,7 @@ def build_position_projections(
     position: str,
     train_through_season: int,
     target_season: int,
-    include_depth_chart_competition: bool = True,
+    include_depth_chart_competition: bool = False,
     multi_season_window: MultiSeasonWindow | None = None,
     multi_season_n_seasons: int | None = None,
     multi_season_decay: float | None = None,
@@ -81,14 +81,14 @@ def build_position_projections(
     single-season `trailing_avg_*` features: "career" (full career to date, games-weighted),
     "last_n" (most recent `multi_season_n_seasons` prior seasons), or "recency_weighted"
     (exponential decay across prior seasons, rate `multi_season_decay`). Left as None (default),
-    each argument falls back to `PositionConfig`'s per-position winner from the multi-season
-    memory backtest (see `docs/research/multi-season-memory-features.md`) -- pass "none"
+    each argument falls back to `PositionConfig`'s per-position setting -- pass "none"
     explicitly to reproduce the original single-season-only baseline.
 
-    `include_depth_chart_competition`'s default of True was re-swept per position under
-    Disagreement Edge (ADR-0014) for issue #16 -- see
-    `docs/research/feature-family-re-sweep-2026-07.md` -- no position's False variant
-    cleared the noise bar, so True is confirmed rather than superseded.
+    `include_depth_chart_competition` defaults to False: issue #16's Disagreement-Edge
+    re-sweep (`docs/research/feature-family-re-sweep-2026-07.md`) found every feature
+    family indistinguishable from noise at every position, so the pipeline now runs the
+    simplest version of each family rather than carrying complexity that isn't earning
+    its keep.
     """
     if target_season != train_through_season + 1:
         raise ValueError(

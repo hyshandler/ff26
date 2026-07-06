@@ -148,6 +148,20 @@ already produced with the red-zone-caching and ADP-crosswalk fixes in place. The
 pre-sweep-vs-post-sweep movement to report beyond those two bug fixes, which is the expected
 result of a "confirmed, not replaced" outcome.
 
+## Follow-up (2026-07-06): simplify instead of confirm
+
+On review, "no candidate clearly beats the current default" is a weak basis for keeping
+a family at a *non-trivial* default (RB/WR/TE's `recency_weighted` multi-season window,
+QB's `last_n`, Depth-Chart Competition's `True`) — those defaults were carrying complexity
+adopted under the retired matched-population criterion, and this sweep gave them no
+independent justification under Disagreement Edge either. Rather than confirm them by
+default, every `PositionConfig`/pipeline default now takes the simplest variant of each
+family: `multi_season_window="none"` for all positions, `include_depth_chart_competition=False`.
+`experience_feature` and `sos_feature` were already at their simplest ("none") and are
+unchanged. Per the table above, this costs at most ~0.01-0.05 correlation at the point
+estimate for any position/family — indistinguishable from noise per this sweep's own
+"clearly beats" bar — in exchange for a materially simpler feature set.
+
 ## Caveats
 
 - **QB and TE are underpowered for this exercise.** The large-disagreement win-rate is computed

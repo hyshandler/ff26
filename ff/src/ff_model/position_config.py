@@ -21,13 +21,14 @@ class PositionConfig:
     """
 
     multi_season_window: MultiSeasonWindow = "none"
-    """This position's winning multi-season memory window, per the backtest documented
-    in `docs/research/multi-season-memory-features.md` -- "none" until a variant has
-    been shown to clearly beat the single-season baseline for this position.
+    """This position's multi-season memory window -- "none" (single-season baseline)
+    unless a variant has been shown to clearly beat it.
 
-    Re-swept under Disagreement Edge (ADR-0014) for issue #16 --
-    `docs/research/feature-family-re-sweep-2026-07.md` -- every position's current
-    winner held up (no alternative cleared the noise bar), so no default changed.
+    Issue #16's Disagreement Edge re-sweep (`docs/research/feature-family-re-sweep-2026-07.md`)
+    found every candidate indistinguishable from "none" (and from each other) at every
+    position -- point-estimate differences were fully inside the noise band. Rather than
+    keep the previously-adopted per-position variants on that basis, every position now
+    runs the simplest "none" baseline.
     """
 
     multi_season_n_seasons: int = 3
@@ -37,23 +38,21 @@ class PositionConfig:
     """Decay rate for `multi_season_window="recency_weighted"`; unused otherwise."""
 
     experience_feature: ExperienceFeature = "none"
-    """This position's winning age/experience encoding, once a backtest shows one clearly
-    beats the without-experience-feature baseline (age, years in league, career games, or
-    a career-stage bucket) -- "none" until then.
+    """This position's age/experience encoding (age, years in league, career games, or a
+    career-stage bucket) -- "none" unless a backtest shows one clearly beats the
+    without-experience-feature baseline.
 
-    Re-swept under Disagreement Edge for issue #16 (see
-    `docs/research/feature-family-re-sweep-2026-07.md`): no position's alternative
-    cleared the noise bar, so "none" is confirmed rather than superseded.
+    Issue #16's Disagreement Edge re-sweep found no candidate at any position clearly
+    beat "none" -- see `docs/research/feature-family-re-sweep-2026-07.md`.
     """
 
     sos_feature: SosFeature = "none"
-    """This position's winning Strength-of-Schedule encoding (season-wide schedule average,
-    or a trailing average aligned to actual games played), once a backtest shows one clearly
-    beats the without-SOS-feature baseline -- "none" until then.
+    """This position's Strength-of-Schedule encoding (season-wide schedule average, or a
+    trailing average aligned to actual games played) -- "none" unless a backtest shows one
+    clearly beats the without-SOS-feature baseline.
 
-    Re-swept under Disagreement Edge for issue #16 (see
-    `docs/research/feature-family-re-sweep-2026-07.md`): no position's alternative
-    cleared the noise bar, so "none" is confirmed rather than superseded.
+    Issue #16's Disagreement Edge re-sweep found no candidate at any position clearly
+    beat "none" -- see `docs/research/feature-family-re-sweep-2026-07.md`.
     """
 
     @property
@@ -78,7 +77,6 @@ RB = PositionConfig(
         "receiving_tds",
     ],
     share_stat_columns={"carry_share": "carries", "trailing_red_zone_share": "red_zone_carries"},
-    multi_season_window="recency_weighted",
 )
 
 QB = PositionConfig(
@@ -97,7 +95,6 @@ QB = PositionConfig(
     # workload relative to the team's total rush attempts is the closest opportunity
     # signal in the same shape as RB's carry_share.
     share_stat_columns={"rush_attempt_share": "carries"},
-    multi_season_window="last_n",
 )
 
 # WR and TE share an identical feature set today (both are pure pass-catchers in
@@ -114,14 +111,12 @@ WR = PositionConfig(
     position="WR",
     raw_stat_columns=_RECEIVER_RAW_STAT_COLUMNS,
     share_stat_columns=_RECEIVER_SHARE_STAT_COLUMNS,
-    multi_season_window="recency_weighted",
 )
 
 TE = PositionConfig(
     position="TE",
     raw_stat_columns=_RECEIVER_RAW_STAT_COLUMNS,
     share_stat_columns=_RECEIVER_SHARE_STAT_COLUMNS,
-    multi_season_window="recency_weighted",
 )
 
 POSITION_CONFIGS = {config.position: config for config in (RB, QB, WR, TE)}

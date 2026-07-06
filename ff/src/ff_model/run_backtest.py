@@ -36,7 +36,7 @@ def run_backtest(
     position: str,
     seasons: list[int],
     min_train_seasons: int,
-    include_depth_chart_competition: bool = True,
+    include_depth_chart_competition: bool = False,
     multi_season_window: MultiSeasonWindow | None = None,
     experience_feature: ExperienceFeature | None = None,
     sos_feature: SosFeature | None = None,
@@ -154,7 +154,7 @@ def build_backtest_report(
     min_train_seasons: int = 3,
     raw_stat_columns: list[str] = RAW_STAT_COLUMNS,
     formula: ScoringFormula = PPR,
-    include_depth_chart_competition: bool = True,
+    include_depth_chart_competition: bool = False,
     multi_season_window: MultiSeasonWindow | None = None,
     experience_feature: ExperienceFeature | None = None,
     sos_feature: SosFeature | None = None,
@@ -172,8 +172,8 @@ def build_backtest_report(
     The feature-family knobs (`include_depth_chart_competition`, `multi_season_window`,
     `experience_feature`, `sos_feature`) and `model_backend` are forwarded straight to
     `run_backtest` -- left at their defaults this reproduces each position's adopted
-    `PositionConfig`, but issue #16's re-sweep overrides them one at a time to score
-    each feature-family variant on Disagreement Edge.
+    `PositionConfig`, but a caller can override them one at a time to score a feature-
+    family variant on Disagreement Edge.
     """
     result = run_backtest(
         position,
