@@ -8,25 +8,39 @@ after seeing results would be overfitting, so this is picked from draft-actionab
 reasoning, not tuned to maximize the win rate."""
 
 
-def _ranks(
-    df: pd.DataFrame, model_col: str, adp_col: str, actual_col: str, season_col: str | None = None
-) -> tuple[pd.Series, pd.Series, pd.Series]:
-    """Rank-1-is-best ranks for each column: ADP is already a draft-order rank (lower
-    is better), while `model_col`/`actual_col` are point projections/totals (higher is
-    better), so only those two need `ascending=False`.
+def model_and_adp_ranks(
+    df: pd.DataFrame, model_col: str, adp_col: str, season_col: str | None = None
+) -> tuple[pd.Series, pd.Series]:
+    """Rank-1-is-best ranks for `model_col` and `adp_col`: ADP is already a draft-order
+    rank (lower is better), while `model_col` is a point projection (higher is better),
+    so only the model column needs `ascending=False`.
 
     When `season_col` is given, ranks are computed within each season group rather than
     across the whole frame -- draft rank only means something relative to the other
-    players drafted the same season, so pooling ranks across multiple backtest seasons
-    would compare players who were never actually drafted against each other.
+    players drafted the same season, so pooling ranks across multiple seasons would
+    compare players who were never actually drafted against each other.
+
+    Shared by `conditional_win_rate`'s large-disagreement flagging and issue #17's
+    drafter-facing "largest disagreements" display, per ADR-0014 -- both need to agree
+    on exactly what counts as a disagreement, not invent separate ad hoc definitions.
     """
     if season_col is not None:
         adp_rank = df.groupby(season_col)[adp_col].rank()
         model_rank = df.groupby(season_col)[model_col].rank(ascending=False)
-        actual_rank = df.groupby(season_col)[actual_col].rank(ascending=False)
     else:
         adp_rank = df[adp_col].rank()
         model_rank = df[model_col].rank(ascending=False)
+    return model_rank, adp_rank
+
+
+def _ranks(
+    df: pd.DataFrame, model_col: str, adp_col: str, actual_col: str, season_col: str | None = None
+) -> tuple[pd.Series, pd.Series, pd.Series]:
+    """`model_and_adp_ranks` plus the same rank-1-is-best treatment for `actual_col`."""
+    model_rank, adp_rank = model_and_adp_ranks(df, model_col, adp_col, season_col)
+    if season_col is not None:
+        actual_rank = df.groupby(season_col)[actual_col].rank(ascending=False)
+    else:
         actual_rank = df[actual_col].rank(ascending=False)
     return model_rank, adp_rank, actual_rank
 

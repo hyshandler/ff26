@@ -1,0 +1,170 @@
+{
+  "RB": {
+    "n_matched": 414,
+    "matched_population": {
+      "model": 0.30692990225195826,
+      "adp": 0.4989681602472328,
+      "naive": 0.24861084004540837
+    },
+    "full_population_context_only": {
+      "model": 0.6401196215404951,
+      "adp": 0.4413096710922351,
+      "naive": 0.5438098808631631
+    },
+    "n": 1012,
+    "model_mae": 90.72932616357858,
+    "naive_mae": 77.30347404773957,
+    "disagreement_edge": {
+      "correlation": 0.2243315550989208,
+      "correlation_ci": [
+        0.07301204266177141,
+        0.4107484357327233
+      ],
+      "win_rate": 0.37755102040816324,
+      "n_large_disagreements": 98,
+      "win_rate_ci": [
+        0.2716028942850135,
+        0.4610938693659281
+      ]
+    },
+    "tier_accuracy": {
+      "model": {
+        "accuracy": 0.3864734299516908,
+        "off_by_one_rate": 0.2560386473429952,
+        "gross_miss_rate": 0.357487922705314
+      },
+      "adp": {
+        "accuracy": 0.47101449275362317,
+        "off_by_one_rate": 0.2560386473429952,
+        "gross_miss_rate": 0.27294685990338163
+      },
+      "verdict": "lost"
+    }
+  },
+  "QB": {
+    "n_matched": 198,
+    "matched_population": {
+      "model": 0.16196457206183307,
+      "adp": 0.3977676302524331,
+      "naive": 0.14612623594510224
+    },
+    "full_population_context_only": {
+      "model": 0.5369202957330729,
+      "adp": 0.3673397043086141,
+      "naive": 0.27263191286981237
+    },
+    "n": 542,
+    "model_mae": 153.9524290770202,
+    "naive_mae": 231.6721166648919,
+    "disagreement_edge": {
+      "correlation": 0.33415643942298934,
+      "correlation_ci": [
+        0.2083706442715088,
+        0.5710770580437754
+      ],
+      "win_rate": 0.2727272727272727,
+      "n_large_disagreements": 11,
+      "win_rate_ci": [
+        0.1960151802656547,
+        0.5714285714285714
+      ]
+    },
+    "tier_accuracy": {
+      "model": {
+        "accuracy": 0.32323232323232326,
+        "off_by_one_rate": 0.2474747474747475,
+        "gross_miss_rate": 0.4292929292929293
+      },
+      "adp": {
+        "accuracy": 0.3838383838383838,
+        "off_by_one_rate": 0.30808080808080807,
+        "gross_miss_rate": 0.30808080808080807
+      },
+      "verdict": "lost"
+    }
+  },
+  "WR": {
+    "n_matched": 502,
+    "matched_population": {
+      "model": 0.2719385442563398,
+      "adp": 0.5200453344578978,
+      "naive": 0.21643256641128236
+    },
+    "full_population_context_only": {
+      "model": 0.6641618011000042,
+      "adp": 0.4576921052795588,
+      "naive": 0.5701297515420647
+    },
+    "n": 1588,
+    "model_mae": 93.14029551870719,
+    "naive_mae": 77.8420754289571,
+    "disagreement_edge": {
+      "correlation": 0.232319882160095,
+      "correlation_ci": [
+        0.1365322985459349,
+        0.3147702892412253
+      ],
+      "win_rate": 0.324468085106383,
+      "n_large_disagreements": 188,
+      "win_rate_ci": [
+        0.3050847457627119,
+        0.4684886003321757
+      ]
+    },
+    "tier_accuracy": {
+      "model": {
+        "accuracy": 0.4442231075697211,
+        "off_by_one_rate": 0.2948207171314741,
+        "gross_miss_rate": 0.26095617529880477
+      },
+      "adp": {
+        "accuracy": 0.5418326693227091,
+        "off_by_one_rate": 0.2848605577689243,
+        "gross_miss_rate": 0.17330677290836655
+      },
+      "verdict": "lost"
+    }
+  },
+  "TE": {
+    "n_matched": 160,
+    "matched_population": {
+      "model": 0.30748158609215376,
+      "adp": 0.36273463531518935,
+      "naive": 0.19909146309648657
+    },
+    "full_population_context_only": {
+      "model": 0.6432063023759601,
+      "adp": 0.307145139490846,
+      "naive": 0.5631197332314333
+    },
+    "n": 822,
+    "model_mae": 85.76626421322251,
+    "naive_mae": 70.40296224666744,
+    "disagreement_edge": {
+      "correlation": 0.3646293299690766,
+      "correlation_ci": [
+        0.0631048363943198,
+        0.5363167839306984
+      ],
+      "win_rate": 0.0,
+      "n_large_disagreements": 1,
+      "win_rate_ci": [
+        0.0,
+        0.75
+      ]
+    },
+    "tier_accuracy": {
+      "model": {
+        "accuracy": 0.3125,
+        "off_by_one_rate": 0.28125,
+        "gross_miss_rate": 0.40625
+      },
+      "adp": {
+        "accuracy": 0.35,
+        "off_by_one_rate": 0.275,
+        "gross_miss_rate": 0.375
+      },
+      "verdict": "lost"
+    }
+  }
+}
