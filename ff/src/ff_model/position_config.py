@@ -23,7 +23,12 @@ class PositionConfig:
     multi_season_window: MultiSeasonWindow = "none"
     """This position's winning multi-season memory window, per the backtest documented
     in `docs/research/multi-season-memory-features.md` -- "none" until a variant has
-    been shown to clearly beat the single-season baseline for this position."""
+    been shown to clearly beat the single-season baseline for this position.
+
+    Re-swept under Disagreement Edge (ADR-0014) for issue #16 --
+    `docs/research/feature-family-re-sweep-2026-07.md` -- every position's current
+    winner held up (no alternative cleared the noise bar), so no default changed.
+    """
 
     multi_season_n_seasons: int = 3
     """Window size for `multi_season_window="last_n"`; unused otherwise."""
@@ -34,12 +39,22 @@ class PositionConfig:
     experience_feature: ExperienceFeature = "none"
     """This position's winning age/experience encoding, once a backtest shows one clearly
     beats the without-experience-feature baseline (age, years in league, career games, or
-    a career-stage bucket) -- "none" until then."""
+    a career-stage bucket) -- "none" until then.
+
+    Re-swept under Disagreement Edge for issue #16 (see
+    `docs/research/feature-family-re-sweep-2026-07.md`): no position's alternative
+    cleared the noise bar, so "none" is confirmed rather than superseded.
+    """
 
     sos_feature: SosFeature = "none"
     """This position's winning Strength-of-Schedule encoding (season-wide schedule average,
     or a trailing average aligned to actual games played), once a backtest shows one clearly
-    beats the without-SOS-feature baseline -- "none" until then."""
+    beats the without-SOS-feature baseline -- "none" until then.
+
+    Re-swept under Disagreement Edge for issue #16 (see
+    `docs/research/feature-family-re-sweep-2026-07.md`): no position's alternative
+    cleared the noise bar, so "none" is confirmed rather than superseded.
+    """
 
     @property
     def needs_red_zone_data(self) -> bool:

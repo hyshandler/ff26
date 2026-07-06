@@ -42,7 +42,7 @@ def crosswalk_adp_to_player_ids(
     callers can see and measure match coverage."""
     season_rosters = rosters.loc[rosters["season"] == season].copy()
     season_rosters["_key"] = (
-        season_rosters["player_name"].map(_normalize_name) + "|" + season_rosters["position"]
+        season_rosters["player_name"].fillna("").map(_normalize_name) + "|" + season_rosters["position"]
     )
     player_id_by_key = season_rosters.drop_duplicates("_key").set_index("_key")["player_id"]
 

@@ -142,11 +142,11 @@ def _ensure_pbp_cached(seasons: list[int]) -> None:
         nfl.cache_pbp(missing, alt_path=str(_PBP_CACHE_DIR))
 
 
-def load_red_zone_rush_attempts(seasons: list[int]) -> pd.DataFrame:
-    """Per player-week red-zone (inside the 20) rush attempts, from nflverse play-by-play."""
-    _ensure_pbp_cached(seasons)
+@lru_cache(maxsize=None)
+def _red_zone_rush_attempts_for_season(season: int) -> pd.DataFrame:
+    _ensure_pbp_cached([season])
     pbp: pd.DataFrame = nfl.import_pbp_data(
-        seasons, downcast=True, cache=True, alt_path=str(_PBP_CACHE_DIR)
+        [season], downcast=True, cache=True, alt_path=str(_PBP_CACHE_DIR)
     )
     red_zone_rushes = pbp.loc[
         (pbp["rush_attempt"] == 1) & (pbp["yardline_100"] <= 20) & pbp["rusher_player_id"].notna()
@@ -157,6 +157,18 @@ def load_red_zone_rush_attempts(seasons: list[int]) -> pd.DataFrame:
         .rename("red_zone_carries")
         .reset_index()
         .rename(columns={"rusher_player_id": "player_id"})
+    )
+
+
+def load_red_zone_rush_attempts(seasons: list[int]) -> pd.DataFrame:
+    """Per player-week red-zone (inside the 20) rush attempts, from nflverse play-by-play.
+
+    Play-by-play is nflverse's heaviest per-season load by far, so this memoizes in-process
+    per season (like every other loader here) -- without it, the Walk-Forward Backtest's
+    expanding window re-decodes every prior season's full play-by-play on every split.
+    """
+    return pd.concat(
+        [_red_zone_rush_attempts_for_season(season) for season in seasons], ignore_index=True
     )
 
 

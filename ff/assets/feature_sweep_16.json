@@ -1,0 +1,1946 @@
+{
+  "RB": {
+    "multi_season_window": {
+      "none": {
+        "n_matched": 414,
+        "disagreement_edge": {
+          "correlation": 0.21953478712053412,
+          "correlation_ci": [
+            0.09442226869087927,
+            0.40549201629523657
+          ],
+          "win_rate": 0.3229166666666667,
+          "n_large_disagreements": 96,
+          "win_rate_ci": [
+            0.2556980472165549,
+            0.42021700094863806
+          ]
+        },
+        "matched_population": {
+          "model": 0.2947321673026306,
+          "adp": 0.4989681602472328,
+          "naive": 0.24861084004540837
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.3888888888888889,
+            "off_by_one_rate": 0.2632850241545894,
+            "gross_miss_rate": 0.34782608695652173
+          },
+          "adp": {
+            "accuracy": 0.47101449275362317,
+            "off_by_one_rate": 0.2560386473429952,
+            "gross_miss_rate": 0.27294685990338163
+          },
+          "verdict": "lost"
+        }
+      },
+      "career": {
+        "n_matched": 414,
+        "disagreement_edge": {
+          "correlation": 0.2355051994903589,
+          "correlation_ci": [
+            0.1385624502217957,
+            0.3821576997497419
+          ],
+          "win_rate": 0.32222222222222224,
+          "n_large_disagreements": 90,
+          "win_rate_ci": [
+            0.25333333333333335,
+            0.42391521739130433
+          ]
+        },
+        "matched_population": {
+          "model": 0.3203724322133019,
+          "adp": 0.4989681602472328,
+          "naive": 0.24861084004540837
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.3864734299516908,
+            "off_by_one_rate": 0.2632850241545894,
+            "gross_miss_rate": 0.3502415458937198
+          },
+          "adp": {
+            "accuracy": 0.47101449275362317,
+            "off_by_one_rate": 0.2560386473429952,
+            "gross_miss_rate": 0.27294685990338163
+          },
+          "verdict": "lost"
+        }
+      },
+      "last_n": {
+        "n_matched": 414,
+        "disagreement_edge": {
+          "correlation": 0.24154073425518466,
+          "correlation_ci": [
+            0.1147025139058328,
+            0.4132334225582598
+          ],
+          "win_rate": 0.3516483516483517,
+          "n_large_disagreements": 91,
+          "win_rate_ci": [
+            0.2966857142857143,
+            0.4492095251767577
+          ]
+        },
+        "matched_population": {
+          "model": 0.33276402450665254,
+          "adp": 0.4989681602472328,
+          "naive": 0.24861084004540837
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.3888888888888889,
+            "off_by_one_rate": 0.26570048309178745,
+            "gross_miss_rate": 0.34541062801932365
+          },
+          "adp": {
+            "accuracy": 0.47101449275362317,
+            "off_by_one_rate": 0.2560386473429952,
+            "gross_miss_rate": 0.27294685990338163
+          },
+          "verdict": "lost"
+        }
+      },
+      "recency_weighted": {
+        "n_matched": 414,
+        "disagreement_edge": {
+          "correlation": 0.23301695771874187,
+          "correlation_ci": [
+            0.12633690317610413,
+            0.3880043165262659
+          ],
+          "win_rate": 0.34444444444444444,
+          "n_large_disagreements": 90,
+          "win_rate_ci": [
+            0.3101185157607347,
+            0.4480805958747135
+          ]
+        },
+        "matched_population": {
+          "model": 0.31523682524534513,
+          "adp": 0.4989681602472328,
+          "naive": 0.24861084004540837
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.4057971014492754,
+            "off_by_one_rate": 0.2632850241545894,
+            "gross_miss_rate": 0.3309178743961353
+          },
+          "adp": {
+            "accuracy": 0.47101449275362317,
+            "off_by_one_rate": 0.2560386473429952,
+            "gross_miss_rate": 0.27294685990338163
+          },
+          "verdict": "lost"
+        }
+      }
+    },
+    "experience_feature": {
+      "none": {
+        "n_matched": 414,
+        "disagreement_edge": {
+          "correlation": 0.23301695771874187,
+          "correlation_ci": [
+            0.12633690317610413,
+            0.3880043165262659
+          ],
+          "win_rate": 0.34444444444444444,
+          "n_large_disagreements": 90,
+          "win_rate_ci": [
+            0.3101185157607347,
+            0.4480805958747135
+          ]
+        },
+        "matched_population": {
+          "model": 0.31523682524534513,
+          "adp": 0.4989681602472328,
+          "naive": 0.24861084004540837
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.4057971014492754,
+            "off_by_one_rate": 0.2632850241545894,
+            "gross_miss_rate": 0.3309178743961353
+          },
+          "adp": {
+            "accuracy": 0.47101449275362317,
+            "off_by_one_rate": 0.2560386473429952,
+            "gross_miss_rate": 0.27294685990338163
+          },
+          "verdict": "lost"
+        }
+      },
+      "age": {
+        "n_matched": 414,
+        "disagreement_edge": {
+          "correlation": 0.23053214794944457,
+          "correlation_ci": [
+            0.11702148053795879,
+            0.40013161158436
+          ],
+          "win_rate": 0.34831460674157305,
+          "n_large_disagreements": 89,
+          "win_rate_ci": [
+            0.28729134830139885,
+            0.4545980031529164
+          ]
+        },
+        "matched_population": {
+          "model": 0.321908692251314,
+          "adp": 0.4989681602472328,
+          "naive": 0.24861084004540837
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.39855072463768115,
+            "off_by_one_rate": 0.27053140096618356,
+            "gross_miss_rate": 0.3309178743961353
+          },
+          "adp": {
+            "accuracy": 0.47101449275362317,
+            "off_by_one_rate": 0.2560386473429952,
+            "gross_miss_rate": 0.27294685990338163
+          },
+          "verdict": "lost"
+        }
+      },
+      "years_in_league": {
+        "n_matched": 414,
+        "disagreement_edge": {
+          "correlation": 0.23731214517088586,
+          "correlation_ci": [
+            0.11006071546827915,
+            0.39156198404388876
+          ],
+          "win_rate": 0.3595505617977528,
+          "n_large_disagreements": 89,
+          "win_rate_ci": [
+            0.3125,
+            0.4744814847783514
+          ]
+        },
+        "matched_population": {
+          "model": 0.3323505074400674,
+          "adp": 0.4989681602472328,
+          "naive": 0.24861084004540837
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.3961352657004831,
+            "off_by_one_rate": 0.2632850241545894,
+            "gross_miss_rate": 0.34057971014492755
+          },
+          "adp": {
+            "accuracy": 0.47101449275362317,
+            "off_by_one_rate": 0.2560386473429952,
+            "gross_miss_rate": 0.27294685990338163
+          },
+          "verdict": "lost"
+        }
+      },
+      "career_games": {
+        "n_matched": 414,
+        "disagreement_edge": {
+          "correlation": 0.20912775778437578,
+          "correlation_ci": [
+            0.10907638185573224,
+            0.35439264159593875
+          ],
+          "win_rate": 0.34408602150537637,
+          "n_large_disagreements": 93,
+          "win_rate_ci": [
+            0.29936073271653724,
+            0.43797221155077476
+          ]
+        },
+        "matched_population": {
+          "model": 0.30432369226702954,
+          "adp": 0.4989681602472328,
+          "naive": 0.24861084004540837
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.39371980676328505,
+            "off_by_one_rate": 0.2608695652173913,
+            "gross_miss_rate": 0.34541062801932365
+          },
+          "adp": {
+            "accuracy": 0.47101449275362317,
+            "off_by_one_rate": 0.2560386473429952,
+            "gross_miss_rate": 0.27294685990338163
+          },
+          "verdict": "lost"
+        }
+      },
+      "career_stage_bucket": {
+        "n_matched": 414,
+        "disagreement_edge": {
+          "correlation": 0.2261334085337522,
+          "correlation_ci": [
+            0.10702979273776897,
+            0.37577001444655855
+          ],
+          "win_rate": 0.3614457831325301,
+          "n_large_disagreements": 83,
+          "win_rate_ci": [
+            0.30434146961606917,
+            0.4695193566868554
+          ]
+        },
+        "matched_population": {
+          "model": 0.31635235373593085,
+          "adp": 0.4989681602472328,
+          "naive": 0.24861084004540837
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.4033816425120773,
+            "off_by_one_rate": 0.2632850241545894,
+            "gross_miss_rate": 0.3333333333333333
+          },
+          "adp": {
+            "accuracy": 0.47101449275362317,
+            "off_by_one_rate": 0.2560386473429952,
+            "gross_miss_rate": 0.27294685990338163
+          },
+          "verdict": "lost"
+        }
+      }
+    },
+    "sos_feature": {
+      "none": {
+        "n_matched": 414,
+        "disagreement_edge": {
+          "correlation": 0.23301695771874187,
+          "correlation_ci": [
+            0.12633690317610413,
+            0.3880043165262659
+          ],
+          "win_rate": 0.34444444444444444,
+          "n_large_disagreements": 90,
+          "win_rate_ci": [
+            0.3101185157607347,
+            0.4480805958747135
+          ]
+        },
+        "matched_population": {
+          "model": 0.31523682524534513,
+          "adp": 0.4989681602472328,
+          "naive": 0.24861084004540837
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.4057971014492754,
+            "off_by_one_rate": 0.2632850241545894,
+            "gross_miss_rate": 0.3309178743961353
+          },
+          "adp": {
+            "accuracy": 0.47101449275362317,
+            "off_by_one_rate": 0.2560386473429952,
+            "gross_miss_rate": 0.27294685990338163
+          },
+          "verdict": "lost"
+        }
+      },
+      "season_wide": {
+        "n_matched": 414,
+        "disagreement_edge": {
+          "correlation": 0.2421379162732202,
+          "correlation_ci": [
+            0.12693259108945773,
+            0.3886034963892536
+          ],
+          "win_rate": 0.367816091954023,
+          "n_large_disagreements": 87,
+          "win_rate_ci": [
+            0.29517299969107197,
+            0.4444444444444444
+          ]
+        },
+        "matched_population": {
+          "model": 0.3286790157017084,
+          "adp": 0.4989681602472328,
+          "naive": 0.24861084004540837
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.42028985507246375,
+            "off_by_one_rate": 0.24154589371980675,
+            "gross_miss_rate": 0.33816425120772947
+          },
+          "adp": {
+            "accuracy": 0.47101449275362317,
+            "off_by_one_rate": 0.2560386473429952,
+            "gross_miss_rate": 0.27294685990338163
+          },
+          "verdict": "lost"
+        }
+      },
+      "actual_games": {
+        "n_matched": 414,
+        "disagreement_edge": {
+          "correlation": 0.2306162496003782,
+          "correlation_ci": [
+            0.12146982041450066,
+            0.40821869440243097
+          ],
+          "win_rate": 0.32954545454545453,
+          "n_large_disagreements": 88,
+          "win_rate_ci": [
+            0.31496062992125984,
+            0.457848956802821
+          ]
+        },
+        "matched_population": {
+          "model": 0.32151843127591184,
+          "adp": 0.4989681602472328,
+          "naive": 0.24861084004540837
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.39855072463768115,
+            "off_by_one_rate": 0.26570048309178745,
+            "gross_miss_rate": 0.3357487922705314
+          },
+          "adp": {
+            "accuracy": 0.47101449275362317,
+            "off_by_one_rate": 0.2560386473429952,
+            "gross_miss_rate": 0.27294685990338163
+          },
+          "verdict": "lost"
+        }
+      }
+    },
+    "include_depth_chart_competition": {
+      "True": {
+        "n_matched": 414,
+        "disagreement_edge": {
+          "correlation": 0.23301695771874187,
+          "correlation_ci": [
+            0.12633690317610413,
+            0.3880043165262659
+          ],
+          "win_rate": 0.34444444444444444,
+          "n_large_disagreements": 90,
+          "win_rate_ci": [
+            0.3101185157607347,
+            0.4480805958747135
+          ]
+        },
+        "matched_population": {
+          "model": 0.31523682524534513,
+          "adp": 0.4989681602472328,
+          "naive": 0.24861084004540837
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.4057971014492754,
+            "off_by_one_rate": 0.2632850241545894,
+            "gross_miss_rate": 0.3309178743961353
+          },
+          "adp": {
+            "accuracy": 0.47101449275362317,
+            "off_by_one_rate": 0.2560386473429952,
+            "gross_miss_rate": 0.27294685990338163
+          },
+          "verdict": "lost"
+        }
+      },
+      "False": {
+        "n_matched": 414,
+        "disagreement_edge": {
+          "correlation": 0.22856686206063354,
+          "correlation_ci": [
+            0.11700721024353188,
+            0.38037846125781166
+          ],
+          "win_rate": 0.35294117647058826,
+          "n_large_disagreements": 85,
+          "win_rate_ci": [
+            0.31216854757317186,
+            0.4343544137022398
+          ]
+        },
+        "matched_population": {
+          "model": 0.31392616626705877,
+          "adp": 0.4989681602472328,
+          "naive": 0.24861084004540837
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.39855072463768115,
+            "off_by_one_rate": 0.2632850241545894,
+            "gross_miss_rate": 0.33816425120772947
+          },
+          "adp": {
+            "accuracy": 0.47101449275362317,
+            "off_by_one_rate": 0.2560386473429952,
+            "gross_miss_rate": 0.27294685990338163
+          },
+          "verdict": "lost"
+        }
+      }
+    }
+  },
+  "QB": {
+    "multi_season_window": {
+      "none": {
+        "n_matched": 198,
+        "disagreement_edge": {
+          "correlation": 0.3303779766091674,
+          "correlation_ci": [
+            0.19291031114431145,
+            0.5816570383864802
+          ],
+          "win_rate": 0.26666666666666666,
+          "n_large_disagreements": 15,
+          "win_rate_ci": [
+            0.1756488631488632,
+            0.5416666666666666
+          ]
+        },
+        "matched_population": {
+          "model": 0.14565935673502392,
+          "adp": 0.3977676302524331,
+          "naive": 0.14612623594510224
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.3282828282828283,
+            "off_by_one_rate": 0.22727272727272727,
+            "gross_miss_rate": 0.4444444444444444
+          },
+          "adp": {
+            "accuracy": 0.3838383838383838,
+            "off_by_one_rate": 0.30808080808080807,
+            "gross_miss_rate": 0.30808080808080807
+          },
+          "verdict": "lost"
+        }
+      },
+      "career": {
+        "n_matched": 198,
+        "disagreement_edge": {
+          "correlation": 0.34896149256558173,
+          "correlation_ci": [
+            0.1888076269164798,
+            0.4962428690600391
+          ],
+          "win_rate": 0.21428571428571427,
+          "n_large_disagreements": 14,
+          "win_rate_ci": [
+            0.19442204301075272,
+            0.5846153846153846
+          ]
+        },
+        "matched_population": {
+          "model": 0.1313267833686782,
+          "adp": 0.3977676302524331,
+          "naive": 0.14612623594510224
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.3383838383838384,
+            "off_by_one_rate": 0.23737373737373738,
+            "gross_miss_rate": 0.42424242424242425
+          },
+          "adp": {
+            "accuracy": 0.3838383838383838,
+            "off_by_one_rate": 0.30808080808080807,
+            "gross_miss_rate": 0.30808080808080807
+          },
+          "verdict": "lost"
+        }
+      },
+      "last_n": {
+        "n_matched": 198,
+        "disagreement_edge": {
+          "correlation": 0.2998821083241377,
+          "correlation_ci": [
+            0.11464739183866114,
+            0.5698440372889891
+          ],
+          "win_rate": 0.2,
+          "n_large_disagreements": 10,
+          "win_rate_ci": [
+            0.13205227343025056,
+            0.5161568409343715
+          ]
+        },
+        "matched_population": {
+          "model": 0.07432036803081675,
+          "adp": 0.3977676302524331,
+          "naive": 0.14612623594510224
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.29797979797979796,
+            "off_by_one_rate": 0.2474747474747475,
+            "gross_miss_rate": 0.45454545454545453
+          },
+          "adp": {
+            "accuracy": 0.3838383838383838,
+            "off_by_one_rate": 0.30808080808080807,
+            "gross_miss_rate": 0.30808080808080807
+          },
+          "verdict": "lost"
+        }
+      },
+      "recency_weighted": {
+        "n_matched": 198,
+        "disagreement_edge": {
+          "correlation": 0.31579190793010353,
+          "correlation_ci": [
+            0.1818279561344094,
+            0.5448578159033778
+          ],
+          "win_rate": 0.3,
+          "n_large_disagreements": 10,
+          "win_rate_ci": [
+            0.17851890756302527,
+            0.5556010928961749
+          ]
+        },
+        "matched_population": {
+          "model": 0.0941797399932886,
+          "adp": 0.3977676302524331,
+          "naive": 0.14612623594510224
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.30808080808080807,
+            "off_by_one_rate": 0.25252525252525254,
+            "gross_miss_rate": 0.4393939393939394
+          },
+          "adp": {
+            "accuracy": 0.3838383838383838,
+            "off_by_one_rate": 0.30808080808080807,
+            "gross_miss_rate": 0.30808080808080807
+          },
+          "verdict": "lost"
+        }
+      }
+    },
+    "experience_feature": {
+      "none": {
+        "n_matched": 198,
+        "disagreement_edge": {
+          "correlation": 0.2998821083241377,
+          "correlation_ci": [
+            0.11464739183866114,
+            0.5698440372889891
+          ],
+          "win_rate": 0.2,
+          "n_large_disagreements": 10,
+          "win_rate_ci": [
+            0.13205227343025056,
+            0.5161568409343715
+          ]
+        },
+        "matched_population": {
+          "model": 0.07432036803081675,
+          "adp": 0.3977676302524331,
+          "naive": 0.14612623594510224
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.29797979797979796,
+            "off_by_one_rate": 0.2474747474747475,
+            "gross_miss_rate": 0.45454545454545453
+          },
+          "adp": {
+            "accuracy": 0.3838383838383838,
+            "off_by_one_rate": 0.30808080808080807,
+            "gross_miss_rate": 0.30808080808080807
+          },
+          "verdict": "lost"
+        }
+      },
+      "age": {
+        "n_matched": 198,
+        "disagreement_edge": {
+          "correlation": 0.2822146202194514,
+          "correlation_ci": [
+            0.11362519603504234,
+            0.49588515784252074
+          ],
+          "win_rate": 0.2222222222222222,
+          "n_large_disagreements": 9,
+          "win_rate_ci": [
+            0.1794871794871795,
+            0.49024276377217546
+          ]
+        },
+        "matched_population": {
+          "model": 0.08708611331963127,
+          "adp": 0.3977676302524331,
+          "naive": 0.14612623594510224
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.30808080808080807,
+            "off_by_one_rate": 0.23737373737373738,
+            "gross_miss_rate": 0.45454545454545453
+          },
+          "adp": {
+            "accuracy": 0.3838383838383838,
+            "off_by_one_rate": 0.30808080808080807,
+            "gross_miss_rate": 0.30808080808080807
+          },
+          "verdict": "lost"
+        }
+      },
+      "years_in_league": {
+        "n_matched": 198,
+        "disagreement_edge": {
+          "correlation": 0.2929202380126055,
+          "correlation_ci": [
+            0.14240700089479835,
+            0.5206236053792388
+          ],
+          "win_rate": 0.3,
+          "n_large_disagreements": 10,
+          "win_rate_ci": [
+            0.17020272982737858,
+            0.4717909062789978
+          ]
+        },
+        "matched_population": {
+          "model": 0.08190174434281752,
+          "adp": 0.3977676302524331,
+          "naive": 0.14612623594510224
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.2878787878787879,
+            "off_by_one_rate": 0.23737373737373738,
+            "gross_miss_rate": 0.47474747474747475
+          },
+          "adp": {
+            "accuracy": 0.3838383838383838,
+            "off_by_one_rate": 0.30808080808080807,
+            "gross_miss_rate": 0.30808080808080807
+          },
+          "verdict": "lost"
+        }
+      },
+      "career_games": {
+        "n_matched": 198,
+        "disagreement_edge": {
+          "correlation": 0.31027436576198586,
+          "correlation_ci": [
+            0.14647830072150336,
+            0.5212994922513491
+          ],
+          "win_rate": 0.3,
+          "n_large_disagreements": 10,
+          "win_rate_ci": [
+            0.1513858093126387,
+            0.5442243833017076
+          ]
+        },
+        "matched_population": {
+          "model": 0.09254952765213754,
+          "adp": 0.3977676302524331,
+          "naive": 0.14612623594510224
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.30808080808080807,
+            "off_by_one_rate": 0.25252525252525254,
+            "gross_miss_rate": 0.4393939393939394
+          },
+          "adp": {
+            "accuracy": 0.3838383838383838,
+            "off_by_one_rate": 0.30808080808080807,
+            "gross_miss_rate": 0.30808080808080807
+          },
+          "verdict": "lost"
+        }
+      },
+      "career_stage_bucket": {
+        "n_matched": 198,
+        "disagreement_edge": {
+          "correlation": 0.3103279673110978,
+          "correlation_ci": [
+            0.16270340206181155,
+            0.5484358915274585
+          ],
+          "win_rate": 0.23076923076923078,
+          "n_large_disagreements": 13,
+          "win_rate_ci": [
+            0.17497282608695652,
+            0.4827586206896552
+          ]
+        },
+        "matched_population": {
+          "model": 0.09545515505393311,
+          "adp": 0.3977676302524331,
+          "naive": 0.14612623594510224
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.31313131313131315,
+            "off_by_one_rate": 0.22727272727272727,
+            "gross_miss_rate": 0.4595959595959596
+          },
+          "adp": {
+            "accuracy": 0.3838383838383838,
+            "off_by_one_rate": 0.30808080808080807,
+            "gross_miss_rate": 0.30808080808080807
+          },
+          "verdict": "lost"
+        }
+      }
+    },
+    "sos_feature": {
+      "none": {
+        "n_matched": 198,
+        "disagreement_edge": {
+          "correlation": 0.2998821083241377,
+          "correlation_ci": [
+            0.11464739183866114,
+            0.5698440372889891
+          ],
+          "win_rate": 0.2,
+          "n_large_disagreements": 10,
+          "win_rate_ci": [
+            0.13205227343025056,
+            0.5161568409343715
+          ]
+        },
+        "matched_population": {
+          "model": 0.07432036803081675,
+          "adp": 0.3977676302524331,
+          "naive": 0.14612623594510224
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.29797979797979796,
+            "off_by_one_rate": 0.2474747474747475,
+            "gross_miss_rate": 0.45454545454545453
+          },
+          "adp": {
+            "accuracy": 0.3838383838383838,
+            "off_by_one_rate": 0.30808080808080807,
+            "gross_miss_rate": 0.30808080808080807
+          },
+          "verdict": "lost"
+        }
+      },
+      "season_wide": {
+        "n_matched": 198,
+        "disagreement_edge": {
+          "correlation": 0.30890178899773896,
+          "correlation_ci": [
+            0.18640358825801842,
+            0.5380722147688846
+          ],
+          "win_rate": 0.3333333333333333,
+          "n_large_disagreements": 12,
+          "win_rate_ci": [
+            0.18175990675990683,
+            0.5435276679841896
+          ]
+        },
+        "matched_population": {
+          "model": 0.0935853192771458,
+          "adp": 0.3977676302524331,
+          "naive": 0.14612623594510224
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.31313131313131315,
+            "off_by_one_rate": 0.2474747474747475,
+            "gross_miss_rate": 0.4393939393939394
+          },
+          "adp": {
+            "accuracy": 0.3838383838383838,
+            "off_by_one_rate": 0.30808080808080807,
+            "gross_miss_rate": 0.30808080808080807
+          },
+          "verdict": "lost"
+        }
+      },
+      "actual_games": {
+        "n_matched": 198,
+        "disagreement_edge": {
+          "correlation": 0.30192171891695746,
+          "correlation_ci": [
+            0.12544995485784344,
+            0.5584316608102815
+          ],
+          "win_rate": 0.16666666666666666,
+          "n_large_disagreements": 12,
+          "win_rate_ci": [
+            0.20407218442932729,
+            0.5454545454545454
+          ]
+        },
+        "matched_population": {
+          "model": 0.09400427380009692,
+          "adp": 0.3977676302524331,
+          "naive": 0.14612623594510224
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.3434343434343434,
+            "off_by_one_rate": 0.20707070707070707,
+            "gross_miss_rate": 0.4494949494949495
+          },
+          "adp": {
+            "accuracy": 0.3838383838383838,
+            "off_by_one_rate": 0.30808080808080807,
+            "gross_miss_rate": 0.30808080808080807
+          },
+          "verdict": "lost"
+        }
+      }
+    },
+    "include_depth_chart_competition": {
+      "True": {
+        "n_matched": 198,
+        "disagreement_edge": {
+          "correlation": 0.2998821083241377,
+          "correlation_ci": [
+            0.11464739183866114,
+            0.5698440372889891
+          ],
+          "win_rate": 0.2,
+          "n_large_disagreements": 10,
+          "win_rate_ci": [
+            0.13205227343025056,
+            0.5161568409343715
+          ]
+        },
+        "matched_population": {
+          "model": 0.07432036803081675,
+          "adp": 0.3977676302524331,
+          "naive": 0.14612623594510224
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.29797979797979796,
+            "off_by_one_rate": 0.2474747474747475,
+            "gross_miss_rate": 0.45454545454545453
+          },
+          "adp": {
+            "accuracy": 0.3838383838383838,
+            "off_by_one_rate": 0.30808080808080807,
+            "gross_miss_rate": 0.30808080808080807
+          },
+          "verdict": "lost"
+        }
+      },
+      "False": {
+        "n_matched": 198,
+        "disagreement_edge": {
+          "correlation": 0.3240767794433376,
+          "correlation_ci": [
+            0.16897100392669892,
+            0.5622125671315312
+          ],
+          "win_rate": 0.3,
+          "n_large_disagreements": 10,
+          "win_rate_ci": [
+            0.16071428571428573,
+            0.5357142857142857
+          ]
+        },
+        "matched_population": {
+          "model": 0.09587720149218275,
+          "adp": 0.3977676302524331,
+          "naive": 0.14612623594510224
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.31313131313131315,
+            "off_by_one_rate": 0.23737373737373738,
+            "gross_miss_rate": 0.4494949494949495
+          },
+          "adp": {
+            "accuracy": 0.3838383838383838,
+            "off_by_one_rate": 0.30808080808080807,
+            "gross_miss_rate": 0.30808080808080807
+          },
+          "verdict": "lost"
+        }
+      }
+    }
+  },
+  "WR": {
+    "multi_season_window": {
+      "none": {
+        "n_matched": 502,
+        "disagreement_edge": {
+          "correlation": 0.22876350857695368,
+          "correlation_ci": [
+            0.1343685157077227,
+            0.29784944446355033
+          ],
+          "win_rate": 0.3422459893048128,
+          "n_large_disagreements": 187,
+          "win_rate_ci": [
+            0.30837004405286345,
+            0.4470736886812487
+          ]
+        },
+        "matched_population": {
+          "model": 0.2721090439518662,
+          "adp": 0.5200453344578978,
+          "naive": 0.21643256641128236
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.44621513944223107,
+            "off_by_one_rate": 0.2968127490039841,
+            "gross_miss_rate": 0.25697211155378485
+          },
+          "adp": {
+            "accuracy": 0.5418326693227091,
+            "off_by_one_rate": 0.2848605577689243,
+            "gross_miss_rate": 0.17330677290836655
+          },
+          "verdict": "lost"
+        }
+      },
+      "career": {
+        "n_matched": 502,
+        "disagreement_edge": {
+          "correlation": 0.2325057359285192,
+          "correlation_ci": [
+            0.13720705670956934,
+            0.3336448643850302
+          ],
+          "win_rate": 0.37305699481865284,
+          "n_large_disagreements": 193,
+          "win_rate_ci": [
+            0.3333333333333333,
+            0.45267489711934156
+          ]
+        },
+        "matched_population": {
+          "model": 0.27315346791939543,
+          "adp": 0.5200453344578978,
+          "naive": 0.21643256641128236
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.4601593625498008,
+            "off_by_one_rate": 0.29282868525896416,
+            "gross_miss_rate": 0.24701195219123506
+          },
+          "adp": {
+            "accuracy": 0.5418326693227091,
+            "off_by_one_rate": 0.2848605577689243,
+            "gross_miss_rate": 0.17330677290836655
+          },
+          "verdict": "lost"
+        }
+      },
+      "last_n": {
+        "n_matched": 502,
+        "disagreement_edge": {
+          "correlation": 0.23789053878196922,
+          "correlation_ci": [
+            0.1555731722768365,
+            0.3506498139236214
+          ],
+          "win_rate": 0.3492063492063492,
+          "n_large_disagreements": 189,
+          "win_rate_ci": [
+            0.3109461694609428,
+            0.4457872028655161
+          ]
+        },
+        "matched_population": {
+          "model": 0.305536003150592,
+          "adp": 0.5200453344578978,
+          "naive": 0.21643256641128236
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.4601593625498008,
+            "off_by_one_rate": 0.30278884462151395,
+            "gross_miss_rate": 0.23705179282868527
+          },
+          "adp": {
+            "accuracy": 0.5418326693227091,
+            "off_by_one_rate": 0.2848605577689243,
+            "gross_miss_rate": 0.17330677290836655
+          },
+          "verdict": "lost"
+        }
+      },
+      "recency_weighted": {
+        "n_matched": 502,
+        "disagreement_edge": {
+          "correlation": 0.23533397225163968,
+          "correlation_ci": [
+            0.12338548988074301,
+            0.3416917395537388
+          ],
+          "win_rate": 0.3559322033898305,
+          "n_large_disagreements": 177,
+          "win_rate_ci": [
+            0.33983822228773586,
+            0.4690698809162721
+          ]
+        },
+        "matched_population": {
+          "model": 0.3063860202444651,
+          "adp": 0.5200453344578978,
+          "naive": 0.21643256641128236
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.46613545816733065,
+            "off_by_one_rate": 0.2968127490039841,
+            "gross_miss_rate": 0.23705179282868527
+          },
+          "adp": {
+            "accuracy": 0.5418326693227091,
+            "off_by_one_rate": 0.2848605577689243,
+            "gross_miss_rate": 0.17330677290836655
+          },
+          "verdict": "lost"
+        }
+      }
+    },
+    "experience_feature": {
+      "none": {
+        "n_matched": 502,
+        "disagreement_edge": {
+          "correlation": 0.23533397225163968,
+          "correlation_ci": [
+            0.12338548988074301,
+            0.3416917395537388
+          ],
+          "win_rate": 0.3559322033898305,
+          "n_large_disagreements": 177,
+          "win_rate_ci": [
+            0.33983822228773586,
+            0.4690698809162721
+          ]
+        },
+        "matched_population": {
+          "model": 0.3063860202444651,
+          "adp": 0.5200453344578978,
+          "naive": 0.21643256641128236
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.46613545816733065,
+            "off_by_one_rate": 0.2968127490039841,
+            "gross_miss_rate": 0.23705179282868527
+          },
+          "adp": {
+            "accuracy": 0.5418326693227091,
+            "off_by_one_rate": 0.2848605577689243,
+            "gross_miss_rate": 0.17330677290836655
+          },
+          "verdict": "lost"
+        }
+      },
+      "age": {
+        "n_matched": 502,
+        "disagreement_edge": {
+          "correlation": 0.22936553608455204,
+          "correlation_ci": [
+            0.12492499199606749,
+            0.34035432185576103
+          ],
+          "win_rate": 0.32727272727272727,
+          "n_large_disagreements": 165,
+          "win_rate_ci": [
+            0.31324159196025814,
+            0.44454022988505737
+          ]
+        },
+        "matched_population": {
+          "model": 0.326324845399514,
+          "adp": 0.5200453344578978,
+          "naive": 0.21643256641128236
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.4601593625498008,
+            "off_by_one_rate": 0.31673306772908366,
+            "gross_miss_rate": 0.22310756972111553
+          },
+          "adp": {
+            "accuracy": 0.5418326693227091,
+            "off_by_one_rate": 0.2848605577689243,
+            "gross_miss_rate": 0.17330677290836655
+          },
+          "verdict": "lost"
+        }
+      },
+      "years_in_league": {
+        "n_matched": 502,
+        "disagreement_edge": {
+          "correlation": 0.2248093982258862,
+          "correlation_ci": [
+            0.11755427430889882,
+            0.32007452389016955
+          ],
+          "win_rate": 0.32934131736526945,
+          "n_large_disagreements": 167,
+          "win_rate_ci": [
+            0.3076923076923077,
+            0.4520604785994429
+          ]
+        },
+        "matched_population": {
+          "model": 0.322691002042666,
+          "adp": 0.5200453344578978,
+          "naive": 0.21643256641128236
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.4681274900398406,
+            "off_by_one_rate": 0.3047808764940239,
+            "gross_miss_rate": 0.22709163346613545
+          },
+          "adp": {
+            "accuracy": 0.5418326693227091,
+            "off_by_one_rate": 0.2848605577689243,
+            "gross_miss_rate": 0.17330677290836655
+          },
+          "verdict": "lost"
+        }
+      },
+      "career_games": {
+        "n_matched": 502,
+        "disagreement_edge": {
+          "correlation": 0.2320567587444679,
+          "correlation_ci": [
+            0.11234808643343192,
+            0.3296964304491915
+          ],
+          "win_rate": 0.3652694610778443,
+          "n_large_disagreements": 167,
+          "win_rate_ci": [
+            0.31506215119228814,
+            0.465589967699031
+          ]
+        },
+        "matched_population": {
+          "model": 0.3230112437042041,
+          "adp": 0.5200453344578978,
+          "naive": 0.21643256641128236
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.46613545816733065,
+            "off_by_one_rate": 0.300796812749004,
+            "gross_miss_rate": 0.23306772908366533
+          },
+          "adp": {
+            "accuracy": 0.5418326693227091,
+            "off_by_one_rate": 0.2848605577689243,
+            "gross_miss_rate": 0.17330677290836655
+          },
+          "verdict": "lost"
+        }
+      },
+      "career_stage_bucket": {
+        "n_matched": 502,
+        "disagreement_edge": {
+          "correlation": 0.23162418073735613,
+          "correlation_ci": [
+            0.11479024683804832,
+            0.33978089094567065
+          ],
+          "win_rate": 0.36257309941520466,
+          "n_large_disagreements": 171,
+          "win_rate_ci": [
+            0.3256876340117403,
+            0.45569620253164556
+          ]
+        },
+        "matched_population": {
+          "model": 0.3239088365597454,
+          "adp": 0.5200453344578978,
+          "naive": 0.21643256641128236
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.4681274900398406,
+            "off_by_one_rate": 0.300796812749004,
+            "gross_miss_rate": 0.23107569721115537
+          },
+          "adp": {
+            "accuracy": 0.5418326693227091,
+            "off_by_one_rate": 0.2848605577689243,
+            "gross_miss_rate": 0.17330677290836655
+          },
+          "verdict": "lost"
+        }
+      }
+    },
+    "sos_feature": {
+      "none": {
+        "n_matched": 502,
+        "disagreement_edge": {
+          "correlation": 0.23533397225163968,
+          "correlation_ci": [
+            0.12338548988074301,
+            0.3416917395537388
+          ],
+          "win_rate": 0.3559322033898305,
+          "n_large_disagreements": 177,
+          "win_rate_ci": [
+            0.33983822228773586,
+            0.4690698809162721
+          ]
+        },
+        "matched_population": {
+          "model": 0.3063860202444651,
+          "adp": 0.5200453344578978,
+          "naive": 0.21643256641128236
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.46613545816733065,
+            "off_by_one_rate": 0.2968127490039841,
+            "gross_miss_rate": 0.23705179282868527
+          },
+          "adp": {
+            "accuracy": 0.5418326693227091,
+            "off_by_one_rate": 0.2848605577689243,
+            "gross_miss_rate": 0.17330677290836655
+          },
+          "verdict": "lost"
+        }
+      },
+      "season_wide": {
+        "n_matched": 502,
+        "disagreement_edge": {
+          "correlation": 0.23710922414971258,
+          "correlation_ci": [
+            0.119894324007308,
+            0.33780294436605585
+          ],
+          "win_rate": 0.3279569892473118,
+          "n_large_disagreements": 186,
+          "win_rate_ci": [
+            0.31059638354346386,
+            0.4610986682808716
+          ]
+        },
+        "matched_population": {
+          "model": 0.30081889262661765,
+          "adp": 0.5200453344578978,
+          "naive": 0.21643256641128236
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.46215139442231074,
+            "off_by_one_rate": 0.2948207171314741,
+            "gross_miss_rate": 0.24302788844621515
+          },
+          "adp": {
+            "accuracy": 0.5418326693227091,
+            "off_by_one_rate": 0.2848605577689243,
+            "gross_miss_rate": 0.17330677290836655
+          },
+          "verdict": "lost"
+        }
+      },
+      "actual_games": {
+        "n_matched": 502,
+        "disagreement_edge": {
+          "correlation": 0.22332287126422962,
+          "correlation_ci": [
+            0.11943074120470155,
+            0.3299646590479426
+          ],
+          "win_rate": 0.329608938547486,
+          "n_large_disagreements": 179,
+          "win_rate_ci": [
+            0.3167877148662749,
+            0.4553501538281797
+          ]
+        },
+        "matched_population": {
+          "model": 0.30305046784668027,
+          "adp": 0.5200453344578978,
+          "naive": 0.21643256641128236
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.4442231075697211,
+            "off_by_one_rate": 0.30876494023904383,
+            "gross_miss_rate": 0.24701195219123506
+          },
+          "adp": {
+            "accuracy": 0.5418326693227091,
+            "off_by_one_rate": 0.2848605577689243,
+            "gross_miss_rate": 0.17330677290836655
+          },
+          "verdict": "lost"
+        }
+      }
+    },
+    "include_depth_chart_competition": {
+      "True": {
+        "n_matched": 502,
+        "disagreement_edge": {
+          "correlation": 0.23533397225163968,
+          "correlation_ci": [
+            0.12338548988074301,
+            0.3416917395537388
+          ],
+          "win_rate": 0.3559322033898305,
+          "n_large_disagreements": 177,
+          "win_rate_ci": [
+            0.33983822228773586,
+            0.4690698809162721
+          ]
+        },
+        "matched_population": {
+          "model": 0.3063860202444651,
+          "adp": 0.5200453344578978,
+          "naive": 0.21643256641128236
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.46613545816733065,
+            "off_by_one_rate": 0.2968127490039841,
+            "gross_miss_rate": 0.23705179282868527
+          },
+          "adp": {
+            "accuracy": 0.5418326693227091,
+            "off_by_one_rate": 0.2848605577689243,
+            "gross_miss_rate": 0.17330677290836655
+          },
+          "verdict": "lost"
+        }
+      },
+      "False": {
+        "n_matched": 502,
+        "disagreement_edge": {
+          "correlation": 0.239473552454667,
+          "correlation_ci": [
+            0.13011164965510322,
+            0.34353026218448046
+          ],
+          "win_rate": 0.3532608695652174,
+          "n_large_disagreements": 184,
+          "win_rate_ci": [
+            0.3240961404324576,
+            0.4634262264675879
+          ]
+        },
+        "matched_population": {
+          "model": 0.3070446367565427,
+          "adp": 0.5200453344578978,
+          "naive": 0.21643256641128236
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.45617529880478086,
+            "off_by_one_rate": 0.300796812749004,
+            "gross_miss_rate": 0.24302788844621515
+          },
+          "adp": {
+            "accuracy": 0.5418326693227091,
+            "off_by_one_rate": 0.2848605577689243,
+            "gross_miss_rate": 0.17330677290836655
+          },
+          "verdict": "lost"
+        }
+      }
+    }
+  },
+  "TE": {
+    "multi_season_window": {
+      "none": {
+        "n_matched": 160,
+        "disagreement_edge": {
+          "correlation": 0.3145477921935838,
+          "correlation_ci": [
+            -0.0037982575460174237,
+            0.4703022595246111
+          ],
+          "win_rate": 0.0,
+          "n_large_disagreements": 1,
+          "win_rate_ci": [
+            0.0,
+            0.790526315789474
+          ]
+        },
+        "matched_population": {
+          "model": 0.2891482429924419,
+          "adp": 0.36273463531518935,
+          "naive": 0.19909146309648657
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.31875,
+            "off_by_one_rate": 0.25625,
+            "gross_miss_rate": 0.425
+          },
+          "adp": {
+            "accuracy": 0.35,
+            "off_by_one_rate": 0.275,
+            "gross_miss_rate": 0.375
+          },
+          "verdict": "lost"
+        }
+      },
+      "career": {
+        "n_matched": 160,
+        "disagreement_edge": {
+          "correlation": 0.34461307883343073,
+          "correlation_ci": [
+            0.021590899661648545,
+            0.5439941527781348
+          ],
+          "win_rate": 0.5,
+          "n_large_disagreements": 2,
+          "win_rate_ci": [
+            0.0,
+            0.7272727272727273
+          ]
+        },
+        "matched_population": {
+          "model": 0.3139110741356723,
+          "adp": 0.36273463531518935,
+          "naive": 0.19909146309648657
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.3,
+            "off_by_one_rate": 0.28125,
+            "gross_miss_rate": 0.41875
+          },
+          "adp": {
+            "accuracy": 0.35,
+            "off_by_one_rate": 0.275,
+            "gross_miss_rate": 0.375
+          },
+          "verdict": "lost"
+        }
+      },
+      "last_n": {
+        "n_matched": 160,
+        "disagreement_edge": {
+          "correlation": 0.2790750363670712,
+          "correlation_ci": [
+            -0.09801088268422027,
+            0.4772586451523388
+          ],
+          "win_rate": 0.5,
+          "n_large_disagreements": 2,
+          "win_rate_ci": [
+            0.0,
+            0.8181818181818182
+          ]
+        },
+        "matched_population": {
+          "model": 0.26551339220772363,
+          "adp": 0.36273463531518935,
+          "naive": 0.19909146309648657
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.3,
+            "off_by_one_rate": 0.25,
+            "gross_miss_rate": 0.45
+          },
+          "adp": {
+            "accuracy": 0.35,
+            "off_by_one_rate": 0.275,
+            "gross_miss_rate": 0.375
+          },
+          "verdict": "lost"
+        }
+      },
+      "recency_weighted": {
+        "n_matched": 160,
+        "disagreement_edge": {
+          "correlation": 0.3133492286426198,
+          "correlation_ci": [
+            -0.0056401956171787835,
+            0.5027653753084864
+          ],
+          "win_rate": 0.5,
+          "n_large_disagreements": 2,
+          "win_rate_ci": [
+            0.0,
+            0.8181818181818182
+          ]
+        },
+        "matched_population": {
+          "model": 0.27245120386735083,
+          "adp": 0.36273463531518935,
+          "naive": 0.19909146309648657
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.33125,
+            "off_by_one_rate": 0.2375,
+            "gross_miss_rate": 0.43125
+          },
+          "adp": {
+            "accuracy": 0.35,
+            "off_by_one_rate": 0.275,
+            "gross_miss_rate": 0.375
+          },
+          "verdict": "lost"
+        }
+      }
+    },
+    "experience_feature": {
+      "none": {
+        "n_matched": 160,
+        "disagreement_edge": {
+          "correlation": 0.3133492286426198,
+          "correlation_ci": [
+            -0.0056401956171787835,
+            0.5027653753084864
+          ],
+          "win_rate": 0.5,
+          "n_large_disagreements": 2,
+          "win_rate_ci": [
+            0.0,
+            0.8181818181818182
+          ]
+        },
+        "matched_population": {
+          "model": 0.27245120386735083,
+          "adp": 0.36273463531518935,
+          "naive": 0.19909146309648657
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.33125,
+            "off_by_one_rate": 0.2375,
+            "gross_miss_rate": 0.43125
+          },
+          "adp": {
+            "accuracy": 0.35,
+            "off_by_one_rate": 0.275,
+            "gross_miss_rate": 0.375
+          },
+          "verdict": "lost"
+        }
+      },
+      "age": {
+        "n_matched": 160,
+        "disagreement_edge": {
+          "correlation": 0.2795858334888974,
+          "correlation_ci": [
+            -0.024540305030448604,
+            0.5289154663587026
+          ],
+          "win_rate": 0.0,
+          "n_large_disagreements": 2,
+          "win_rate_ci": [
+            0.0,
+            0.692391304347826
+          ]
+        },
+        "matched_population": {
+          "model": 0.2620796442072662,
+          "adp": 0.36273463531518935,
+          "naive": 0.19909146309648657
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.3,
+            "off_by_one_rate": 0.26875,
+            "gross_miss_rate": 0.43125
+          },
+          "adp": {
+            "accuracy": 0.35,
+            "off_by_one_rate": 0.275,
+            "gross_miss_rate": 0.375
+          },
+          "verdict": "lost"
+        }
+      },
+      "years_in_league": {
+        "n_matched": 160,
+        "disagreement_edge": {
+          "correlation": 0.3058136076766378,
+          "correlation_ci": [
+            -0.008433596608905271,
+            0.5576587472252146
+          ],
+          "win_rate": 0.5,
+          "n_large_disagreements": 2,
+          "win_rate_ci": [
+            0.0,
+            0.7777777777777778
+          ]
+        },
+        "matched_population": {
+          "model": 0.280971117848008,
+          "adp": 0.36273463531518935,
+          "naive": 0.19909146309648657
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.325,
+            "off_by_one_rate": 0.2625,
+            "gross_miss_rate": 0.4125
+          },
+          "adp": {
+            "accuracy": 0.35,
+            "off_by_one_rate": 0.275,
+            "gross_miss_rate": 0.375
+          },
+          "verdict": "lost"
+        }
+      },
+      "career_games": {
+        "n_matched": 160,
+        "disagreement_edge": {
+          "correlation": 0.3090946396676889,
+          "correlation_ci": [
+            -0.02157923110310207,
+            0.5471390143803486
+          ],
+          "win_rate": 0.5,
+          "n_large_disagreements": 2,
+          "win_rate_ci": [
+            0.0,
+            0.75
+          ]
+        },
+        "matched_population": {
+          "model": 0.2903099162707537,
+          "adp": 0.36273463531518935,
+          "naive": 0.19909146309648657
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.325,
+            "off_by_one_rate": 0.275,
+            "gross_miss_rate": 0.4
+          },
+          "adp": {
+            "accuracy": 0.35,
+            "off_by_one_rate": 0.275,
+            "gross_miss_rate": 0.375
+          },
+          "verdict": "lost"
+        }
+      },
+      "career_stage_bucket": {
+        "n_matched": 160,
+        "disagreement_edge": {
+          "correlation": 0.2634981544631717,
+          "correlation_ci": [
+            -0.041758255953282905,
+            0.4980980463010726
+          ],
+          "win_rate": 0.5,
+          "n_large_disagreements": 2,
+          "win_rate_ci": [
+            0.0,
+            0.75
+          ]
+        },
+        "matched_population": {
+          "model": 0.2525899601002,
+          "adp": 0.36273463531518935,
+          "naive": 0.19909146309648657
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.29375,
+            "off_by_one_rate": 0.25,
+            "gross_miss_rate": 0.45625
+          },
+          "adp": {
+            "accuracy": 0.35,
+            "off_by_one_rate": 0.275,
+            "gross_miss_rate": 0.375
+          },
+          "verdict": "lost"
+        }
+      }
+    },
+    "sos_feature": {
+      "none": {
+        "n_matched": 160,
+        "disagreement_edge": {
+          "correlation": 0.3133492286426198,
+          "correlation_ci": [
+            -0.0056401956171787835,
+            0.5027653753084864
+          ],
+          "win_rate": 0.5,
+          "n_large_disagreements": 2,
+          "win_rate_ci": [
+            0.0,
+            0.8181818181818182
+          ]
+        },
+        "matched_population": {
+          "model": 0.27245120386735083,
+          "adp": 0.36273463531518935,
+          "naive": 0.19909146309648657
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.33125,
+            "off_by_one_rate": 0.2375,
+            "gross_miss_rate": 0.43125
+          },
+          "adp": {
+            "accuracy": 0.35,
+            "off_by_one_rate": 0.275,
+            "gross_miss_rate": 0.375
+          },
+          "verdict": "lost"
+        }
+      },
+      "season_wide": {
+        "n_matched": 160,
+        "disagreement_edge": {
+          "correlation": 0.2949025660207008,
+          "correlation_ci": [
+            -0.030347696544467423,
+            0.5473611284297791
+          ],
+          "win_rate": 0.5,
+          "n_large_disagreements": 2,
+          "win_rate_ci": [
+            0.0,
+            0.8181818181818182
+          ]
+        },
+        "matched_population": {
+          "model": 0.25562671761084343,
+          "adp": 0.36273463531518935,
+          "naive": 0.19909146309648657
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.31875,
+            "off_by_one_rate": 0.23125,
+            "gross_miss_rate": 0.45
+          },
+          "adp": {
+            "accuracy": 0.35,
+            "off_by_one_rate": 0.275,
+            "gross_miss_rate": 0.375
+          },
+          "verdict": "lost"
+        }
+      },
+      "actual_games": {
+        "n_matched": 160,
+        "disagreement_edge": {
+          "correlation": 0.27109906434181885,
+          "correlation_ci": [
+            -0.05488335650531519,
+            0.48876493858659176
+          ],
+          "win_rate": 0.0,
+          "n_large_disagreements": 1,
+          "win_rate_ci": [
+            0.0,
+            0.6666666666666666
+          ]
+        },
+        "matched_population": {
+          "model": 0.2684080534913857,
+          "adp": 0.36273463531518935,
+          "naive": 0.19909146309648657
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.31875,
+            "off_by_one_rate": 0.225,
+            "gross_miss_rate": 0.45625
+          },
+          "adp": {
+            "accuracy": 0.35,
+            "off_by_one_rate": 0.275,
+            "gross_miss_rate": 0.375
+          },
+          "verdict": "lost"
+        }
+      }
+    },
+    "include_depth_chart_competition": {
+      "True": {
+        "n_matched": 160,
+        "disagreement_edge": {
+          "correlation": 0.3133492286426198,
+          "correlation_ci": [
+            -0.0056401956171787835,
+            0.5027653753084864
+          ],
+          "win_rate": 0.5,
+          "n_large_disagreements": 2,
+          "win_rate_ci": [
+            0.0,
+            0.8181818181818182
+          ]
+        },
+        "matched_population": {
+          "model": 0.27245120386735083,
+          "adp": 0.36273463531518935,
+          "naive": 0.19909146309648657
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.33125,
+            "off_by_one_rate": 0.2375,
+            "gross_miss_rate": 0.43125
+          },
+          "adp": {
+            "accuracy": 0.35,
+            "off_by_one_rate": 0.275,
+            "gross_miss_rate": 0.375
+          },
+          "verdict": "lost"
+        }
+      },
+      "False": {
+        "n_matched": 160,
+        "disagreement_edge": {
+          "correlation": 0.3106005497432848,
+          "correlation_ci": [
+            -0.027983398937924578,
+            0.5318778695805865
+          ],
+          "win_rate": 0.5,
+          "n_large_disagreements": 2,
+          "win_rate_ci": [
+            0.0,
+            0.8181818181818182
+          ]
+        },
+        "matched_population": {
+          "model": 0.28085538999304377,
+          "adp": 0.36273463531518935,
+          "naive": 0.19909146309648657
+        },
+        "tier_accuracy": {
+          "model": {
+            "accuracy": 0.31875,
+            "off_by_one_rate": 0.25,
+            "gross_miss_rate": 0.43125
+          },
+          "adp": {
+            "accuracy": 0.35,
+            "off_by_one_rate": 0.275,
+            "gross_miss_rate": 0.375
+          },
+          "verdict": "lost"
+        }
+      }
+    }
+  }
+}

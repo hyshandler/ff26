@@ -84,6 +84,11 @@ def build_position_projections(
     each argument falls back to `PositionConfig`'s per-position winner from the multi-season
     memory backtest (see `docs/research/multi-season-memory-features.md`) -- pass "none"
     explicitly to reproduce the original single-season-only baseline.
+
+    `include_depth_chart_competition`'s default of True was re-swept per position under
+    Disagreement Edge (ADR-0014) for issue #16 -- see
+    `docs/research/feature-family-re-sweep-2026-07.md` -- no position's False variant
+    cleared the noise bar, so True is confirmed rather than superseded.
     """
     if target_season != train_through_season + 1:
         raise ValueError(
